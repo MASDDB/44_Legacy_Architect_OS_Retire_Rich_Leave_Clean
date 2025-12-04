@@ -1,42 +1,96 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '../../components/ui/Header';
-import Sidebar from '../../components/ui/Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
+import { getFinancialRecords, createFinancialRecord, updateFinancialRecord } from '../../services/rrclService';
+import FinancialsView from '../../components/rrlc/financials/FinancialsView';
 
 const Financials = () => {
-  const navigate = useNavigate();
-  const { user, initialized } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { user } = useAuth();
+  const [financialData, setFinancialData] = useState(null);
+  const [recordId, setRecordId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (initialized && !user) {
-      navigate('/user-authentication');
+    if (user) {
+      fetchFinancials();
     }
-  }, [user, initialized, navigate]);
+  }, [user]);
+
+  const fetchFinancials = async () => {
+    try {
+      setLoading(true);
+      const businessId = user.user_metadata?.business_id;
+      if (!businessId) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await getFinancialRecords(businessId);
+      if (error) throw error;
+
+      // Use the most recent record if available
+      if (data && data.length > 0) {
+        const latest = data[0];
+        setFinancialData(latest);
+        setRecordId(latest.id);
+      }
+    } catch (err) {
+      console.error('Error fetching financials:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveFinancials = async (data) => {
+    try {
+      const businessId = user.user_metadata?.business_id;
+      if (!businessId) {
+        alert('No business profile found.');
+        return;
+      }
+
+      if (recordId) {
+        // Update existing
+        const { error } = await updateFinancialRecord(recordId, data);
+        if (error) throw error;
+        alert('Financials updated successfully');
+      } else {
+        // Create new
+        const { data: newRecord, error } = await createFinancialRecord(businessId, user.id, {
+          ...data,
+          fiscal_year: new Date().getFullYear() // Default to current year
+        });
+        if (error) throw error;
+        setRecordId(newRecord.id);
+        alert('Financials saved successfully');
+      }
+    } catch (err) {
+      console.error('Error saving financials:', err);
+      alert('Failed to save financials');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Financials</h1>
+        <p className="text-muted-foreground">
+          Track revenue, expenses, and calculate normalized EBITDA.
+        </p>
+      </div>
 
-      <main className={`pt-16 transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-60'}`}>
-        <div className="p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Financial Analysis</h1>
-            <p className="text-muted-foreground">
-              Normalized EBITDA calculator and financial metrics
-            </p>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl p-12 text-center">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Coming Soon</h2>
-            <p className="text-muted-foreground">
-              EBITDA calculator, add-backs tracking, and financial record management
-            </p>
-          </div>
-        </div>
-      </main>
+      <FinancialsView
+        financialData={financialData}
+        onSave={handleSaveFinancials}
+        isDemo={false}
+      />
     </div>
   );
 };

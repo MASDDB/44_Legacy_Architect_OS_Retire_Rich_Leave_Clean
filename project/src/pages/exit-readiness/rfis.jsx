@@ -1,42 +1,103 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '../../components/ui/Header';
-import Sidebar from '../../components/ui/Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
+import { getRFIs, createRFI, updateRFI, deleteRFI } from '../../services/rrclService';
+import RFIsView from '../../components/rrlc/rfis/RFIsView';
 
 const RFIs = () => {
-  const navigate = useNavigate();
-  const { user, initialized } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { user } = useAuth();
+  const [rfis, setRFIs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (initialized && !user) {
-      navigate('/user-authentication');
+    if (user) {
+      fetchRFIs();
     }
-  }, [user, initialized, navigate]);
+  }, [user]);
+
+  const fetchRFIs = async () => {
+    try {
+      setLoading(true);
+      const businessId = user.user_metadata?.business_id;
+      if (!businessId) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await getRFIs(businessId);
+      if (error) throw error;
+      setRFIs(data || []);
+    } catch (err) {
+      console.error('Error fetching RFIs:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddRFI = async (newRFI) => {
+    try {
+      const businessId = user.user_metadata?.business_id;
+      if (!businessId) {
+        alert('No business profile found.');
+        return;
+      }
+
+      const { data, error } = await createRFI(businessId, user.id, newRFI);
+      if (error) throw error;
+      setRFIs([data, ...rfis]);
+    } catch (err) {
+      console.error('Error adding RFI:', err);
+      alert('Failed to add RFI');
+    }
+  };
+
+  const handleUpdateRFI = async (rfiId, updates) => {
+    try {
+      const { data, error } = await updateRFI(rfiId, updates);
+      if (error) throw error;
+      setRFIs(rfis.map(r => r.id === rfiId ? data : r));
+    } catch (err) {
+      console.error('Error updating RFI:', err);
+      alert('Failed to update RFI');
+    }
+  };
+
+  const handleDeleteRFI = async (rfiId) => {
+    if (!window.confirm('Are you sure you want to delete this RFI?')) return;
+
+    try {
+      const { error } = await deleteRFI(rfiId);
+      if (error) throw error;
+      setRFIs(rfis.filter(r => r.id !== rfiId));
+    } catch (err) {
+      console.error('Error deleting RFI:', err);
+      alert('Failed to delete RFI');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">RFI Tracker</h1>
+        <p className="text-muted-foreground">
+          Manage Requests for Information from potential buyers.
+        </p>
+      </div>
 
-      <main className={`pt-16 transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-60'}`}>
-        <div className="p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Request for Information (RFI) Tracker</h1>
-            <p className="text-muted-foreground">
-              Manage buyer requests and prepare responses
-            </p>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl p-12 text-center">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Coming Soon</h2>
-            <p className="text-muted-foreground">
-              Track RFIs, manage responses, and attach supporting documentation
-            </p>
-          </div>
-        </div>
-      </main>
+      <RFIsView
+        rfis={rfis}
+        onAdd={handleAddRFI}
+        onUpdate={handleUpdateRFI}
+        onDelete={handleDeleteRFI}
+        isDemo={false}
+      />
     </div>
   );
 };

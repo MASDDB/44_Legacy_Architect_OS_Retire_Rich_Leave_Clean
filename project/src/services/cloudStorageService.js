@@ -16,8 +16,13 @@ const REDIRECT_URI = `${window.location.origin}/exit-readiness/data-room`;
  * Initiate Google Drive OAuth flow
  */
 export function initiateGoogleDriveAuth(businessId) {
+  console.log('🔍 Initiating Google Drive auth...');
+  console.log('Client ID:', GOOGLE_DRIVE_CLIENT_ID);
+  console.log('Business ID:', businessId);
+
   if (!GOOGLE_DRIVE_CLIENT_ID) {
-    console.warn('Google Drive Client ID not configured');
+    console.error('❌ Google Drive Client ID not configured');
+    alert('Google Drive integration requires API credentials. Please contact your administrator.');
     return {
       error: 'Google Drive integration requires API credentials. Please contact your administrator.'
     };
@@ -31,8 +36,12 @@ export function initiateGoogleDriveAuth(businessId) {
     `scope=${encodeURIComponent(scope)}&` +
     `state=${businessId}`;
 
+  console.log('🔗 Redirect URI:', REDIRECT_URI);
+  console.log('🚀 Redirecting to:', authUrl);
+
   window.location.href = authUrl;
 }
+
 
 /**
  * Save Google Drive connection

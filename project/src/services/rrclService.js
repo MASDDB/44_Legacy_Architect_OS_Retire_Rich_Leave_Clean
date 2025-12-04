@@ -783,3 +783,65 @@ export async function getDataRoomStatistics(businessId) {
   }
 }
 
+
+// ==================== Delete Functions ====================
+
+export async function deleteContract(contractId) {
+    try {
+        const { error } = await supabase
+            .from('rrlc_contracts')
+            .delete()
+            .eq('id', contractId);
+
+        if (error) throw error;
+        return { error: null };
+    } catch (error) {
+        console.error('Error deleting contract:', error);
+        return { error: error.message };
+    }
+}
+
+export async function deleteRFI(rfiId) {
+    try {
+        const { error } = await supabase
+            .from('rrlc_rfis')
+            .delete()
+            .eq('id', rfiId);
+
+        if (error) throw error;
+        return { error: null };
+    } catch (error) {
+        console.error('Error deleting RFI:', error);
+        return { error: error.message };
+    }
+}
+
+export async function deleteFinancialRecord(recordId) {
+    try {
+        const { error } = await supabase
+            .from('rrlc_financial_records')
+            .delete()
+            .eq('id', recordId);
+
+        if (error) throw error;
+        return { error: null };
+    } catch (error) {
+        console.error('Error deleting financial record:', error);
+        return { error: error.message };
+    }
+}
+
+export async function deleteKPIMetric(metricId) {
+    try {
+        const { error } = await supabase
+            .from('rrlc_kpi_metrics')
+            .delete()
+            .eq('id', metricId);
+
+        if (error) throw error;
+        return { error: null };
+    } catch (error) {
+        console.error('Error deleting KPI metric:', error);
+        return { error: error.message };
+    }
+}

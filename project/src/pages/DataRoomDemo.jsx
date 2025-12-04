@@ -5,13 +5,31 @@ import Icon from '../components/AppIcon';
 import Button from '../components/ui/Button';
 import { demoBusiness } from '../data/demoDataRoomData';
 
+// Shared Components
+import ContractsView from '../components/rrlc/contracts/ContractsView';
+import FinancialsView from '../components/rrlc/financials/FinancialsView';
+import KPIsView from '../components/rrlc/kpis/KPIsView';
+import RFIsView from '../components/rrlc/rfis/RFIsView';
+import WorkingCapitalView from '../components/rrlc/workingCapital/WorkingCapitalView';
+
 const DataRoomDemo = () => {
-    const [selectedBusinessIndex, setSelectedBusinessIndex] = useState(2); // Start with most complete
+    const [selectedBusinessIndex, setSelectedBusinessIndex] = useState(0); // Start with HVAC (index 0)
+    const [activeTab, setActiveTab] = useState('documents');
+
     const currentBusiness = demoBusiness[selectedBusinessIndex];
 
     const totalFolders = currentBusiness.folders.length;
     const completedFolders = currentBusiness.folders.filter(f => f.is_complete).length;
     const totalDocuments = currentBusiness.folders.reduce((sum, f) => sum + f.document_count, 0);
+
+    const tabs = [
+        { id: 'documents', label: 'Documents', icon: 'Folder' },
+        { id: 'contracts', label: 'Contracts', icon: 'FileText' },
+        { id: 'financials', label: 'Financials', icon: 'DollarSign' },
+        { id: 'kpis', label: 'KPIs', icon: 'BarChart2' },
+        { id: 'rfis', label: 'RFIs', icon: 'List' },
+        { id: 'working-capital', label: 'Working Capital', icon: 'Activity' }
+    ];
 
     return (
         <div className="min-h-screen bg-background">
@@ -55,8 +73,8 @@ const DataRoomDemo = () => {
                                 key={business.id}
                                 onClick={() => setSelectedBusinessIndex(index)}
                                 className={`p-4 rounded-lg border-2 text-left transition-all ${selectedBusinessIndex === index
-                                        ? 'border-primary bg-primary/5 shadow-lg'
-                                        : 'border-border bg-card hover:border-primary/50'
+                                    ? 'border-primary bg-primary/5 shadow-lg'
+                                    : 'border-border bg-card hover:border-primary/50'
                                     }`}
                             >
                                 <div className="flex items-center justify-between mb-2">
@@ -94,55 +112,114 @@ const DataRoomDemo = () => {
                     </p>
                 </div>
 
-                {/* Statistics */}
-                <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-xl p-6 mb-8">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                                Data Room Completeness
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {completedFolders} of {totalFolders} folders complete • {totalDocuments} documents uploaded
-                            </p>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-4xl font-bold text-primary">
-                                {currentBusiness.completion}%
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">Overall Progress</div>
-                        </div>
-                    </div>
-                    <div className="mt-4 h-3 bg-background rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-gradient-to-r from-primary to-accent transition-all"
-                            style={{ width: `${currentBusiness.completion}%` }}
-                        />
-                    </div>
+                {/* Tabs */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 border-b border-border">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
+                                    ? 'bg-primary text-white'
+                                    : 'bg-card border border-border text-foreground hover:border-primary/50'
+                                }`}
+                        >
+                            <Icon name={tab.icon} size={16} />
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
 
-                {/* Folders */}
-                <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">
-                        Data Room Structure (0-10 Sections)
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                        Standard M&A diligence folder structure. Click any folder to view its contents.
-                    </p>
-                    <div className="space-y-4">
-                        {currentBusiness.folders.map((folder) => (
-                            <DataRoomFolder
-                                key={folder.id}
-                                folder={folder}
-                                documents={folder.documents}
-                                onUpload={() => { }} // Demo mode - no upload
-                                onDelete={() => { }} // Demo mode - no delete
-                            />
-                        ))}
-                    </div>
+                {/* Tab Content */}
+                <div className="min-h-[500px]">
+                    {activeTab === 'documents' && (
+                        <>
+                            {/* Statistics */}
+                            <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-xl p-6 mb-8">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                                            Data Room Completeness
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            {completedFolders} of {totalFolders} folders complete • {totalDocuments} documents uploaded
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-4xl font-bold text-primary">
+                                            {currentBusiness.completion}%
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">Overall Progress</div>
+                                    </div>
+                                </div>
+                                <div className="mt-4 h-3 bg-background rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-primary to-accent transition-all"
+                                        style={{ width: `${currentBusiness.completion}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Folders */}
+                            <div className="mb-8">
+                                <h3 className="text-lg font-semibold text-foreground mb-4">
+                                    Data Room Structure (0-10 Sections)
+                                </h3>
+                                <p className="text-sm text-muted-foreground mb-6">
+                                    Standard M&A diligence folder structure. Click any folder to view its contents.
+                                </p>
+                                <div className="space-y-4">
+                                    {currentBusiness.folders.map((folder) => (
+                                        <DataRoomFolder
+                                            key={folder.id}
+                                            folder={folder}
+                                            documents={folder.documents}
+                                            onUpload={() => { }} // Demo mode - no upload
+                                            onDelete={() => { }} // Demo mode - no delete
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {activeTab === 'contracts' && (
+                        <ContractsView
+                            contracts={currentBusiness.contracts}
+                            isDemo={true}
+                        />
+                    )}
+
+                    {activeTab === 'financials' && (
+                        <FinancialsView
+                            financialData={currentBusiness.financials}
+                            isDemo={true}
+                        />
+                    )}
+
+                    {activeTab === 'kpis' && (
+                        <KPIsView
+                            kpiData={currentBusiness.kpis}
+                            isDemo={true}
+                        />
+                    )}
+
+                    {activeTab === 'rfis' && (
+                        <RFIsView
+                            rfis={currentBusiness.rfis}
+                            isDemo={true}
+                        />
+                    )}
+
+                    {activeTab === 'working-capital' && (
+                        <WorkingCapitalView
+                            workingCapitalData={currentBusiness.workingCapital}
+                            isDemo={true}
+                        />
+                    )}
                 </div>
 
                 {/* CTA Section */}
-                <div className="bg-gradient-to-r from-primary via-accent to-primary rounded-xl p-8 text-center text-white">
+                <div className="bg-gradient-to-r from-primary via-accent to-primary rounded-xl p-8 text-center text-white mt-12">
                     <div className="max-w-3xl mx-auto">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full mb-4">
                             <Icon name="TrendingUp" size={20} />

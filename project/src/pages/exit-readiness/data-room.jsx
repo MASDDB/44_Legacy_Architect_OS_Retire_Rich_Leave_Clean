@@ -162,16 +162,27 @@ const DataRoom = () => {
   };
 
   const handleConnectCloud = async (provider) => {
-    if (!business) return;
+    console.log('🔘 Connect button clicked for provider:', provider);
+    console.log('Current business:', business);
+
+    if (!business) {
+      console.error('❌ No business found');
+      alert('Please ensure you have a business profile set up before connecting cloud storage.');
+      return;
+    }
 
     if (provider === 'google_drive') {
+      console.log('📁 Attempting Google Drive connection...');
       const result = initiateGoogleDriveAuth(business.id);
       if (result?.error) {
+        console.error('❌ Google Drive auth error:', result.error);
         alert(result.error);
       }
     } else if (provider === 'dropbox') {
+      console.log('📦 Attempting Dropbox connection...');
       const result = initiateDropboxAuth(business.id);
       if (result?.error) {
+        console.error('❌ Dropbox auth error:', result.error);
         alert(result.error);
       }
     }
