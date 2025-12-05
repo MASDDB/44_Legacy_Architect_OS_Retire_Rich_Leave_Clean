@@ -37,6 +37,7 @@ import DataRoomDemo from './pages/DataRoomDemo';
 import HelpCenter from './pages/help-center';
 import BlogIndex from './pages/blog';
 import First30Days from './pages/blog/first-30-days';
+import ExitTimeline from './pages/blog/exit-timeline';
 
 const Routes = () => {
   return (
@@ -78,6 +79,7 @@ const Routes = () => {
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/blog" element={<BlogIndex />} />
           <Route path="/blog/first-30-days" element={<First30Days />} />
+          <Route path="/blog/exit-timeline" element={<ExitTimeline />} />
           <Route path="*" element={<NotFound />} />
         </RouterRoutes>
       </ErrorBoundary>
