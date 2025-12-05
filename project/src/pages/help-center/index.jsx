@@ -590,6 +590,48 @@ const HelpCenter = () => {
                         </p>
                     </section>
 
+                    {/* Call to Action */}
+                    <section id="cta" className="mb-0">
+                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 text-center">
+                            <h2 className="text-3xl font-bold text-white mb-4">
+                                Ready to See Legacy Architect OS in Action?
+                            </h2>
+                            <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+                                If you haven't created your account yet:
+                            </p>
+                            <ul className="text-left max-w-xl mx-auto mb-8 space-y-2">
+                                <li className="flex items-start text-white">
+                                    <Icon name="CheckCircle" size={20} className="mr-3 mt-0.5 flex-shrink-0" />
+                                    <span>Run your <strong>Hidden Profit + Exit Readiness Checkup</strong></span>
+                                </li>
+                                <li className="flex items-start text-white">
+                                    <Icon name="CheckCircle" size={20} className="mr-3 mt-0.5 flex-shrink-0" />
+                                    <span>See which <strong>Missions</strong> we recommend for your business</span>
+                                </li>
+                                <li className="flex items-start text-white">
+                                    <Icon name="CheckCircle" size={20} className="mr-3 mt-0.5 flex-shrink-0" />
+                                    <span>Decide if you want to keep building an exit-ready operating system with us</span>
+                                </li>
+                            </ul>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <Link
+                                    to="/ai-audit"
+                                    className="inline-flex items-center justify-center px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors"
+                                >
+                                    <Icon name="Activity" size={20} className="mr-2" />
+                                    Start Your Free Checkup
+                                </Link>
+                                <Link
+                                    to="/user-authentication"
+                                    className="inline-flex items-center justify-center px-8 py-3 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition-colors border-2 border-white"
+                                >
+                                    <Icon name="LogIn" size={20} className="mr-2" />
+                                    Log In
+                                </Link>
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
             </div>
 
