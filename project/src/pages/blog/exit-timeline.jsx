@@ -43,7 +43,7 @@ const ExitTimeline = () => {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden mb-8">
                     <img
-                        src="/C:/Users/reipr/.gemini/antigravity/brain/04df1761-6d98-495d-b66a-ccbc73bad193/blog_exit_timeline_1764974050621.png"
+                        src="/blog_exit_timeline.png"
                         alt="Exit Timeline Strategy"
                         className="w-full h-full object-cover"
                     />
