@@ -29,6 +29,15 @@ const blogArticles = [
         date: '2024-12-05',
         readTime: '12 min read',
         category: 'Troubleshooting'
+    },
+    {
+        id: 'consultants-guide',
+        title: 'Using Legacy Architect OS as a Consultant, Advisor, or Partner',
+        excerpt: 'How consultants, agencies, and advisors can use the platform as their operating system for client results. Learn the 3 roles, execution framework, and how to avoid scope creep.',
+        image: '/blog_consultants.png',
+        date: '2024-12-05',
+        readTime: '11 min read',
+        category: 'For Partners'
     }
     // More articles will be added here
 ];
