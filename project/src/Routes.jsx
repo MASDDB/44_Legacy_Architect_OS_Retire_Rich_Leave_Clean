@@ -34,6 +34,7 @@ import RFIs from './pages/exit-readiness/rfis';
 import KPIs from './pages/exit-readiness/kpis';
 import WorkingCapital from './pages/exit-readiness/working-capital';
 import DataRoomDemo from './pages/DataRoomDemo';
+import HelpCenter from './pages/help-center';
 
 const Routes = () => {
   return (
@@ -72,6 +73,7 @@ const Routes = () => {
           <Route path="/exit-readiness/kpis" element={<KPIs />} />
           <Route path="/exit-readiness/working-capital" element={<WorkingCapital />} />
           <Route path="/data-room-demo" element={<DataRoomDemo />} />
+          <Route path="/help-center" element={<HelpCenter />} />
           <Route path="*" element={<NotFound />} />
         </RouterRoutes>
       </ErrorBoundary>

@@ -19,7 +19,7 @@ const FooterSection = () => {
       { label: 'Contact', href: '#contact' }
     ],
     resources: [
-      { label: 'Help Center', href: '#help' },
+      { label: 'Help Center', href: '/help-center' },
       { label: 'Blog', href: '#blog' },
       { label: 'Case Studies', href: '#cases' },
       { label: 'Webinars', href: '#webinars' }
@@ -57,7 +57,7 @@ const FooterSection = () => {
             <p className="text-muted-foreground mb-6 max-w-md">
               Transform dormant leads into booked appointments with AI-powered multi-channel outreach. Stop spending on new leads when your database holds untapped revenue potential.
             </p>
-            
+
             {/* Contact Info */}
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center space-x-2">
