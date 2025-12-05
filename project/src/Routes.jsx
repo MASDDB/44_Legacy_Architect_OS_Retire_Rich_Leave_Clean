@@ -38,6 +38,7 @@ import HelpCenter from './pages/help-center';
 import BlogIndex from './pages/blog';
 import First30Days from './pages/blog/first-30-days';
 import ExitTimeline from './pages/blog/exit-timeline';
+import TroubleshootingMissions from './pages/blog/troubleshooting-missions';
 
 const Routes = () => {
   return (
@@ -80,6 +81,7 @@ const Routes = () => {
           <Route path="/blog" element={<BlogIndex />} />
           <Route path="/blog/first-30-days" element={<First30Days />} />
           <Route path="/blog/exit-timeline" element={<ExitTimeline />} />
+          <Route path="/blog/troubleshooting-missions" element={<TroubleshootingMissions />} />
           <Route path="*" element={<NotFound />} />
         </RouterRoutes>
       </ErrorBoundary>

@@ -20,6 +20,15 @@ const blogArticles = [
         date: '2024-12-05',
         readTime: '10 min read',
         category: 'Strategy'
+    },
+    {
+        id: 'troubleshooting-missions',
+        title: 'Troubleshooting Missions: Low Replies, No Shows, or Weak Results',
+        excerpt: 'When your Mission doesn\'t hit right away, use this guide to debug like an owner. Learn the 4-part troubleshooting framework and specific fixes for each Mission type.',
+        image: '/blog_troubleshooting.png',
+        date: '2024-12-05',
+        readTime: '12 min read',
+        category: 'Troubleshooting'
     }
     // More articles will be added here
 ];
