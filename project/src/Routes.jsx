@@ -40,6 +40,7 @@ import First30Days from './pages/blog/first-30-days';
 import ExitTimeline from './pages/blog/exit-timeline';
 import TroubleshootingMissions from './pages/blog/troubleshooting-missions';
 import ConsultantsGuide from './pages/blog/consultants-guide';
+import SecurityPrivacy from './pages/blog/security-privacy';
 
 const Routes = () => {
   return (
@@ -84,6 +85,7 @@ const Routes = () => {
           <Route path="/blog/exit-timeline" element={<ExitTimeline />} />
           <Route path="/blog/troubleshooting-missions" element={<TroubleshootingMissions />} />
           <Route path="/blog/consultants-guide" element={<ConsultantsGuide />} />
+          <Route path="/blog/security-privacy" element={<SecurityPrivacy />} />
           <Route path="*" element={<NotFound />} />
         </RouterRoutes>
       </ErrorBoundary>

@@ -38,8 +38,16 @@ const blogArticles = [
         date: '2024-12-05',
         readTime: '11 min read',
         category: 'For Partners'
+    },
+    {
+        id: 'security-privacy',
+        title: 'Security, Privacy & Data Stewardship in Legacy Architect OS',
+        excerpt: 'A plain-English overview of how we protect your data, respect your privacy, and share responsibility for security. Understand the ground rules for data ownership and compliance.',
+        image: '/blog_security.png',
+        date: '2024-12-05',
+        readTime: '9 min read',
+        category: 'Security'
     }
-    // More articles will be added here
 ];
 
 const BlogIndex = () => {
