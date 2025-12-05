@@ -7,7 +7,7 @@ const blogArticles = [
         id: 'first-30-days',
         title: 'Your First Day, First Week, and First Month in Legacy Architect OS',
         excerpt: 'A complete guide to getting started with Legacy Architect OS. Learn what to focus on Day 1, what to accomplish in your first 7 days, and how to use your first 30 days to create a new "normal" in your business.',
-        image: '/C:/Users/reipr/.gemini/antigravity/brain/04df1761-6d98-495d-b66a-ccbc73bad193/blog_getting_started_1764973287545.png',
+        image: '/blog_getting_started.png',
         date: '2024-12-05',
         readTime: '8 min read',
         category: 'Getting Started'
@@ -16,7 +16,7 @@ const blogArticles = [
         id: 'exit-timeline',
         title: 'How to Use Legacy Architect OS Based on Your Exit Timeline',
         excerpt: 'Not every owner is on the same clock. Learn how to prioritize your Missions whether you\'re 1-2 years from exit, 3-5 years out, or never planning to sell.',
-        image: '/C:/Users/reipr/.gemini/antigravity/brain/04df1761-6d98-495d-b66a-ccbc73bad193/blog_exit_timeline_1764974113871.png',
+        image: '/blog_exit_timeline.png',
         date: '2024-12-05',
         readTime: '10 min read',
         category: 'Strategy'
