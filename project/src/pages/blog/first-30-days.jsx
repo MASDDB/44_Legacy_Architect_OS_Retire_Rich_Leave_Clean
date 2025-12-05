@@ -43,7 +43,7 @@ const First30Days = () => {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden mb-8">
                     <img
-                        src="/C:/Users/reipr/.gemini/antigravity/brain/04df1761-6d98-495d-b66a-ccbc73bad193/blog_getting_started_1764973287545.png"
+                        src="/blog_getting_started.png"
                         alt="Getting Started with Legacy Architect OS"
                         className="w-full h-full object-cover"
                     />
