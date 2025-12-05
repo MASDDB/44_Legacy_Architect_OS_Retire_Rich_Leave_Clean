@@ -35,6 +35,8 @@ import KPIs from './pages/exit-readiness/kpis';
 import WorkingCapital from './pages/exit-readiness/working-capital';
 import DataRoomDemo from './pages/DataRoomDemo';
 import HelpCenter from './pages/help-center';
+import BlogIndex from './pages/blog';
+import First30Days from './pages/blog/first-30-days';
 
 const Routes = () => {
   return (
@@ -74,6 +76,8 @@ const Routes = () => {
           <Route path="/exit-readiness/working-capital" element={<WorkingCapital />} />
           <Route path="/data-room-demo" element={<DataRoomDemo />} />
           <Route path="/help-center" element={<HelpCenter />} />
+          <Route path="/blog" element={<BlogIndex />} />
+          <Route path="/blog/first-30-days" element={<First30Days />} />
           <Route path="*" element={<NotFound />} />
         </RouterRoutes>
       </ErrorBoundary>

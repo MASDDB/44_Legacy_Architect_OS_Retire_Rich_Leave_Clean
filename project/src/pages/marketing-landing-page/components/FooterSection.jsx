@@ -20,7 +20,7 @@ const FooterSection = () => {
     ],
     resources: [
       { label: 'Help Center', href: '/help-center' },
-      { label: 'Blog', href: '#blog' },
+      { label: 'Blog', href: '/blog' },
       { label: 'Case Studies', href: '#cases' },
       { label: 'Webinars', href: '#webinars' }
     ],
