@@ -6,7 +6,7 @@ const SolutionSection = () => {
   const solutionFeatures = [
     {
       icon: "Activity",
-      title: "AI + Exit Audit",
+      title: "Hidden Profit + Exit Audit",
       description: "In 15–20 minutes, our system scores your AI Readiness and Exit Readiness, then shows exactly where money is leaking and which missions to turn on first."
     },
     {
@@ -41,7 +41,7 @@ const SolutionSection = () => {
                 Turn Daily Operations Into an Exit-Ready, Wealth-Building Machine
               </h2>
               <p className="text-xl text-gray-700">
-                Legacy Architect OS is your AI-powered control center for turning a busy, owner-dependent service business into a clean, documented, and data-driven asset. We start with an AI + Exit Audit, then activate targeted "missions" that plug leaks, boost cash flow, and build the buyer-ready story investors love.
+                Legacy Architect OS is your AI-powered control center for turning a busy, owner-dependent service business into a clean, documented, and data-driven asset. We start with a Hidden Profit + Exit Audit, then activate targeted "missions" that plug leaks, boost cash flow, and build the buyer-ready story investors love.
               </p>
             </div>
 
@@ -85,13 +85,13 @@ const SolutionSection = () => {
                 alt="Business dashboard showing successful lead reactivation campaigns"
                 className="rounded-2xl shadow-elevated w-full h-96 object-cover"
               />
-              
+
               {/* Overlay Success Stats */}
               <div className="absolute top-4 left-4 bg-success text-success-foreground px-4 py-2 rounded-lg shadow-lg">
                 <div className="text-lg font-bold">+247%</div>
                 <div className="text-xs">Average ROI</div>
               </div>
-              
+
               <div className="absolute bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg">
                 <div className="text-lg font-bold">89%</div>
                 <div className="text-xs">Response Rate</div>

@@ -224,7 +224,7 @@ export default function AIAuditPage() {
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Your AI + Exit Audit Results</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Hidden Profit + Exit Audit Results</h1>
                 <p className="text-lg text-gray-600">
                   Here's where you stand today and the missions we recommend starting first.
                 </p>
@@ -275,7 +275,7 @@ export default function AIAuditPage() {
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">AI + Exit Audit</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Hidden Profit + Exit Audit</h1>
               <p className="text-lg text-gray-600">
                 Answer a few questions and we'll show you where the leaks are, how ready you are to step back, and which missions to turn on first.
               </p>
@@ -328,13 +328,12 @@ function ProgressStepper({ currentStep, totalSteps }) {
             <React.Fragment key={stepNumber}>
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                    isActive
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${isActive
                       ? 'bg-blue-600 text-white'
                       : isCompleted
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}
                 >
                   {isCompleted ? '✓' : stepNumber}
                 </div>

@@ -6,8 +6,8 @@ const FAQSection = () => {
 
   const faqs = [
     {
-      question: "What is the AI + Exit Audit and how long does it take?",
-      answer: `The AI + Exit Audit is a 15-20 minute guided questionnaire that scores your AI Readiness and Exit Readiness (0-100), then shows exactly where revenue is leaking and which missions to turn on first. You get immediate results with personalized mission recommendations tailored to your business.`
+      question: "What is the Hidden Profit + Exit Audit and how long does it take?",
+      answer: `The Hidden Profit + Exit Audit is a 15-20 minute guided questionnaire that scores your AI Readiness and Exit Readiness (0-100), then shows exactly where revenue is leaking and which missions to turn on first. You get immediate results with personalized mission recommendations tailored to your business.`
     },
     {
       question: "Is this platform compliant with TCPA and other regulations?",
@@ -35,7 +35,7 @@ const FAQSection = () => {
     },
     {
       question: "What if my customer database is old or messy?",
-      answer: `That's exactly where we shine. The AI + Exit Audit identifies which customers are most likely to respond regardless of how old the data is. We've successfully reactivated customer lists that were 3-5 years old. Our compliance engine ensures all outreach is legal and appropriate.`
+      answer: `That's exactly where we shine. The Hidden Profit + Exit Audit identifies which customers are most likely to respond regardless of how old the data is. We've successfully reactivated customer lists that were 3-5 years old. Our compliance engine ensures all outreach is legal and appropriate.`
     },
     {
       question: "Do you provide training and ongoing support?",
@@ -90,7 +90,7 @@ const FAQSection = () => {
                   />
                 </div>
               </button>
-              
+
               {openFAQ === index && (
                 <div className="px-6 pb-4">
                   <div className="pt-2 border-t border-border">

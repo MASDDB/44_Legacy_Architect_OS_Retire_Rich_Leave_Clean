@@ -47,14 +47,14 @@ const CTASection = () => {
             <Icon name="Rocket" size={16} />
             <span>Ready to Transform Your Business?</span>
           </div>
-          
+
           <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
             Stop Building a Job.
             <span className="block text-blue-600">Start Building a Legacy.</span>
           </h2>
 
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Join service business owners who've stopped working 60-hour weeks and started building an asset they can sell. Your exit starts with knowing where the leaks are — let our AI + Exit Audit show you.
+            Join service business owners who've stopped working 60-hour weeks and started building an asset they can sell. Your exit starts with knowing where the leaks are — let our Hidden Profit + Exit Audit show you.
           </p>
 
           {/* CTA Buttons */}
@@ -85,7 +85,7 @@ const CTASection = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 text-sm text-muted-foreground mb-16">
             <div className="flex items-center space-x-2">
               <Icon name="CheckCircle" size={16} className="text-success" />
-              <span>Start with AI + Exit Audit</span>
+              <span>Start with Hidden Profit + Exit Audit</span>
             </div>
             <div className="flex items-center space-x-2">
               <Icon name="Shield" size={16} className="text-success" />
@@ -125,7 +125,7 @@ const CTASection = () => {
             <Icon name="Clock" size={20} />
             <span className="font-semibold">Limited Time Offer</span>
           </div>
-          
+
           <h3 className="text-2xl font-bold text-foreground mb-4">
             Get Started Today and Receive the Exit-Readiness Accelerator Package
           </h3>
@@ -133,7 +133,7 @@ const CTASection = () => {
           <div className="grid md:grid-cols-3 gap-4 mb-6">
             <div className="flex items-center space-x-2 text-green-600">
               <Icon name="Activity" size={16} />
-              <span className="text-sm">Free AI + Exit Audit ($500 value)</span>
+              <span className="text-sm">Free Hidden Profit + Exit Audit ($500 value)</span>
             </div>
             <div className="flex items-center space-x-2 text-green-600">
               <Icon name="FileText" size={16} />

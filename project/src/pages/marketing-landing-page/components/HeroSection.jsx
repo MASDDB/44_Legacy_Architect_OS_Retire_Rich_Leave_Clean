@@ -69,7 +69,7 @@ const HeroSection = () => {
             {/* Badge */}
             <div className="inline-flex items-center space-x-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
               <Icon name="Layers" size={16} />
-              <span>AI + Exit-Readiness Platform for Service Businesses</span>
+              <span>Hidden Profit + Exit-Readiness Platform for Service Businesses</span>
             </div>
 
             {/* Headline */}

@@ -6,7 +6,7 @@ const BenefitsSection = () => {
     {
       icon: "Activity",
       title: "See Exactly Where the Leaks Are",
-      description: "The AI + Exit Audit pinpoints missed revenue (calls, quotes, past customers) and tells you which missions to activate first."
+      description: "The Hidden Profit + Exit Audit pinpoints missed revenue (calls, quotes, past customers) and tells you which missions to activate first."
     },
     {
       icon: "Target",
@@ -95,7 +95,7 @@ const BenefitsSection = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <div className="flex items-center space-x-2 text-green-600">
                 <Icon name="CheckCircle" size={16} />
-                <span className="text-sm font-medium">Start with AI + Exit Audit</span>
+                <span className="text-sm font-medium">Start with Hidden Profit + Exit Audit</span>
               </div>
               <div className="flex items-center space-x-2 text-green-600">
                 <Icon name="CheckCircle" size={16} />

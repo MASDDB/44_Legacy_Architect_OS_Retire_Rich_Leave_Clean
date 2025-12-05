@@ -31,7 +31,7 @@ const QuickActions = () => {
 
   const quickActions = [
     {
-      title: 'Run AI + Exit Audit',
+      title: 'Run Hidden Profit + Exit Audit',
       description: 'See where the leaks are, how buyer-ready you are, and which missions to turn on first',
       icon: 'Activity',
       color: 'blue',
