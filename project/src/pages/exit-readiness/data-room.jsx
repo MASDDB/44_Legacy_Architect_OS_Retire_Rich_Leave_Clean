@@ -7,6 +7,7 @@ import CloudStorageCard from '../../components/rrlc/CloudStorageCard';
 import DocumentUploadModal from '../../components/rrlc/DocumentUploadModal';
 import Icon from '../../components/AppIcon';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import {
   getBusinessesByUserId,
   createBusiness,
@@ -60,8 +61,21 @@ const DataRoom = () => {
       // Auto-create business profile if it doesn't exist
       if (!businesses || businesses.length === 0) {
         console.log('📝 No business profile found, creating one...');
+
+        // Try to get user profile data for better defaults
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('full_name, email')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        // Use user's name or email for business name
+        const businessName = userProfile?.full_name
+          ? `${userProfile.full_name}'s Business`
+          : user.email?.split('@')[0] || 'My Business';
+
         const { data: newBusiness, error: createError } = await createBusiness(user.id, {
-          business_name: 'My Business',
+          business_name: businessName,
           is_active: true
         });
 
