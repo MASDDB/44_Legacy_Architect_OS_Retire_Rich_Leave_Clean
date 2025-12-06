@@ -9,6 +9,7 @@ import Icon from '../../components/AppIcon';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getBusinessesByUserId,
+  createBusiness,
   getDataRoomFolders,
   initializeDataRoomFolders,
   getDocumentsByFolder,
@@ -54,7 +55,27 @@ const DataRoom = () => {
   const loadDataRoom = async () => {
     setLoading(true);
     try {
-      const { data: businesses } = await getBusinessesByUserId(user.id);
+      let { data: businesses } = await getBusinessesByUserId(user.id);
+
+      // Auto-create business profile if it doesn't exist
+      if (!businesses || businesses.length === 0) {
+        console.log('📝 No business profile found, creating one...');
+        const { data: newBusiness, error: createError } = await createBusiness(user.id, {
+          business_name: 'My Business',
+          is_active: true
+        });
+
+        if (createError) {
+          console.error('Error creating business:', createError);
+          alert('Failed to create business profile. Please try again.');
+          setLoading(false);
+          return;
+        }
+
+        businesses = [newBusiness];
+        console.log('✅ Business profile created:', newBusiness);
+      }
+
       if (businesses && businesses.length > 0) {
         const currentBusiness = businesses[0];
         setBusiness(currentBusiness);
