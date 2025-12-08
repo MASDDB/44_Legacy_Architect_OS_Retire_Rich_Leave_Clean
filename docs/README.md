@@ -30,13 +30,14 @@ Welcome to the Legacy Architect OS documentation. This comprehensive guide will 
 - [Technical Troubleshooting](resources/troubleshooting.md)
 - [Assessment FAQs](resources/assessment-faqs.md)
 - [Data Room FAQs](resources/data-room-faqs.md)
-- [Glossary](resources/glossary.md)
+- [Master Glossary](resources/glossary.md)
+- [Best Practices](resources/best-practices.md)
 
 ## 🎯 Quick Links
 
 - **New Users**: Start with [Quick Start Guide](getting-started/quick-start.md)
 - **Business Owners**: See [Your First 30 Days](tutorials/first-30-days.md)
-- **Consultants**: Check [Partner Guide](how-to-guides/consultants.md)
+- **Consultants**: Check [Advisor Playbook](how-to-guides/consultants.md)
 - **Developers**: Visit [API Reference](reference/api.md)
 
 ## 🆘 Need Help?
