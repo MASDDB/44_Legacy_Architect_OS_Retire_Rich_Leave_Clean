@@ -26,8 +26,10 @@ Welcome to the Legacy Architect OS documentation. This comprehensive guide will 
 - [Missions](how-to-guides/missions.md)
 
 ### Resources
-- [FAQs](resources/faqs.md)
-- [Troubleshooting](resources/troubleshooting.md)
+- [General FAQs](resources/faqs.md)
+- [Technical Troubleshooting](resources/troubleshooting.md)
+- [Assessment FAQs](resources/assessment-faqs.md)
+- [Data Room FAQs](resources/data-room-faqs.md)
 - [Glossary](resources/glossary.md)
 
 ## 🎯 Quick Links
