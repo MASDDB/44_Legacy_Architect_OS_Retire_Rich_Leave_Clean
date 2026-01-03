@@ -135,7 +135,7 @@ export function initiateDropboxAuth(businessId) {
   }
 
   const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
-    `client_id=${DROPBOX_APP_KEY}&` +
+    `client_id=${DROPBOX_APP_KEY?.trim()}&` +
     `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
     `response_type=token&` +
     `state=${businessId}`;

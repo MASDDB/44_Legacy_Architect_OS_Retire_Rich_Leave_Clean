@@ -53,6 +53,60 @@ const DataRoom = () => {
     }
   }, [user]);
 
+  // Handle OAuth callback from Dropbox or Google Drive
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const hash = window.location.hash;
+      if (!hash || !user) return;
+
+      // Parse hash parameters
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      const state = params.get('state'); // businessId
+      const error = params.get('error');
+
+      if (error) {
+        console.error('OAuth error:', error);
+        alert(`Authentication failed: ${error}`);
+        window.location.hash = ''; // Clear hash
+        return;
+      }
+
+      if (accessToken && state) {
+        console.log('✅ OAuth callback received');
+        console.log('Access token:', accessToken.substring(0, 10) + '...');
+        console.log('Business ID:', state);
+
+        try {
+          // Determine provider (Dropbox tokens are longer, typically 64+ chars)
+          const provider = accessToken.length > 100 ? 'dropbox' : 'google_drive';
+
+          // Import the save function dynamically
+          const { saveDropboxConnection, saveGoogleDriveConnection } = await import('../../services/cloudStorageService');
+
+          if (provider === 'dropbox') {
+            await saveDropboxConnection(state, user.id, accessToken);
+            console.log('✅ Dropbox connection saved');
+          } else {
+            await saveGoogleDriveConnection(state, user.id, accessToken);
+            console.log('✅ Google Drive connection saved');
+          }
+
+          // Clear hash and reload
+          window.location.hash = '';
+          await loadDataRoom();
+          alert(`${provider === 'dropbox' ? 'Dropbox' : 'Google Drive'} connected successfully!`);
+        } catch (error) {
+          console.error('Error saving connection:', error);
+          alert('Failed to save connection. Please try again.');
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, [user]);
+
+
   const loadDataRoom = async () => {
     setLoading(true);
     try {
