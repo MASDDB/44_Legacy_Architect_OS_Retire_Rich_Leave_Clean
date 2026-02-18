@@ -41,6 +41,10 @@ import ExitTimeline from './pages/blog/exit-timeline';
 import TroubleshootingMissions from './pages/blog/troubleshooting-missions';
 import ConsultantsGuide from './pages/blog/consultants-guide';
 import SecurityPrivacy from './pages/blog/security-privacy';
+import LeadsView from './pages/leads-view';
+import LeadDetail from './pages/lead-detail';
+import TodaysAppointments from './pages/todays-appointments';
+import SchemaSanityCheck from './pages/dev-schema-check';
 
 const Routes = () => {
   return (
@@ -86,6 +90,10 @@ const Routes = () => {
           <Route path="/blog/troubleshooting-missions" element={<TroubleshootingMissions />} />
           <Route path="/blog/consultants-guide" element={<ConsultantsGuide />} />
           <Route path="/blog/security-privacy" element={<SecurityPrivacy />} />
+          <Route path="/leads" element={<LeadsView />} />
+          <Route path="/leads/:id" element={<LeadDetail />} />
+          <Route path="/todays-appointments" element={<TodaysAppointments />} />
+          <Route path="/dev/schema-check" element={<SchemaSanityCheck />} />
           <Route path="*" element={<NotFound />} />
         </RouterRoutes>
       </ErrorBoundary>

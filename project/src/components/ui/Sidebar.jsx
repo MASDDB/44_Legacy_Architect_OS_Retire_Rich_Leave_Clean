@@ -31,6 +31,12 @@ const Sidebar = ({ isCollapsed = false, onToggle }) => {
           label: 'Overview',
           icon: 'Home',
           description: 'Performance overview and quick actions'
+        },
+        {
+          path: '/todays-appointments',
+          label: "Today's Appointments",
+          icon: 'CalendarCheck',
+          description: 'View scheduled appointments'
         }
       ]
     },
@@ -39,6 +45,12 @@ const Sidebar = ({ isCollapsed = false, onToggle }) => {
       title: 'Campaign Management',
       icon: 'Target',
       items: [
+        {
+          path: '/leads',
+          label: 'Leads',
+          icon: 'Users',
+          description: 'View and manage all leads'
+        },
         {
           path: '/lead-import-manager',
           label: 'Lead Import',
@@ -149,6 +161,12 @@ const Sidebar = ({ isCollapsed = false, onToggle }) => {
           label: 'Compliance Center',
           icon: 'Shield',
           description: 'Data protection and compliance tools'
+        },
+        {
+          path: '/dev/schema-check',
+          label: 'Schema Check',
+          icon: 'Database',
+          description: 'Dev: verify schema sanity'
         }
       ]
     },
@@ -168,9 +186,8 @@ const Sidebar = ({ isCollapsed = false, onToggle }) => {
   ];
 
   return (
-    <aside className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-card border-r border-border z-100 transition-all duration-300 ${
-      isCollapsed ? 'w-16' : 'w-60'
-    }`}>
+    <aside className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-card border-r border-border z-100 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-60'
+      }`}>
       <div className="flex flex-col h-full">
         {/* Sidebar Header */}
         <div className="p-4 border-b border-border">
@@ -210,9 +227,8 @@ const Sidebar = ({ isCollapsed = false, onToggle }) => {
               {/* Section Header */}
               <button
                 onClick={() => !isCollapsed && toggleSection(section?.id)}
-                className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors ${
-                  isCollapsed ? 'justify-center' : ''
-                }`}
+                className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors ${isCollapsed ? 'justify-center' : ''
+                  }`}
                 title={isCollapsed ? section?.title : ''}
               >
                 <div className="flex items-center space-x-3">
@@ -227,9 +243,8 @@ const Sidebar = ({ isCollapsed = false, onToggle }) => {
                   <Icon
                     name="ChevronDown"
                     size={16}
-                    className={`text-muted-foreground transition-transform ${
-                      expandedSections?.[section?.id] ? 'rotate-180' : ''
-                    }`}
+                    className={`text-muted-foreground transition-transform ${expandedSections?.[section?.id] ? 'rotate-180' : ''
+                      }`}
                   />
                 )}
               </button>
@@ -242,10 +257,9 @@ const Sidebar = ({ isCollapsed = false, onToggle }) => {
                       key={item?.path}
                       to={item?.path}
                       className={({ isActive }) =>
-                        `flex items-center space-x-3 p-2 rounded-lg transition-colors group ${
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        `flex items-center space-x-3 p-2 rounded-lg transition-colors group ${isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                         } ${isCollapsed ? 'justify-center' : ''}`
                       }
                       title={isCollapsed ? item?.label : item?.description}
