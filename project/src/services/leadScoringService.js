@@ -1,12 +1,11 @@
 import { supabase } from '../lib/supabase';
-import openai from '../lib/openai';
 
 /**
  * Advanced Lead Scoring Service
  * Provides AI-powered lead scoring, behavioral analysis, and predictive analytics
  */
 export class LeadScoringService {
-  
+
   /**
    * Get comprehensive lead score with all components
    * @param {string} leadId - UUID of the lead
@@ -41,14 +40,14 @@ export class LeadScoringService {
     try {
       // Call the database function to calculate the score
       const { data: scoreData, error: scoreError } = await supabase?.rpc('calculate_overall_lead_score', {
-          lead_uuid: leadId,
-          scoring_model_uuid: scoringModelId
-        });
+        lead_uuid: leadId,
+        scoring_model_uuid: scoringModelId
+      });
 
       if (scoreError) throw scoreError;
 
       const overallScore = scoreData || 0;
-      
+
       // Get score category
       const { data: categoryData, error: categoryError } = await supabase?.rpc('get_lead_score_category', { score: overallScore });
 
@@ -71,22 +70,22 @@ export class LeadScoringService {
 
       // Insert or update lead score
       const { data: newScore, error: insertError } = await supabase?.from('lead_scores')?.upsert({
-          lead_id: leadId,
-          scoring_model_id: scoringModelId,
-          overall_score: overallScore,
-          category: categoryData,
-          behavioral_score: behavioralScore?.data || 0,
-          engagement_score: engagementScore?.data || 0,
-          fit_score: fitScore?.data || 0,
-          demographic_score: 10, // Placeholder
-          intent_score: 15, // Enhanced with AI
-          score_reasoning: scoreReasoning,
-          confidence_level: this.calculateConfidenceLevel(overallScore),
-          conversion_probability: this.predictConversionProbability(overallScore),
-          predicted_value: await this.predictLeadValue(leadId),
-          calculated_at: new Date()?.toISOString(),
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000)?.toISOString()
-        })?.select()?.single();
+        lead_id: leadId,
+        scoring_model_id: scoringModelId,
+        overall_score: overallScore,
+        category: categoryData,
+        behavioral_score: behavioralScore?.data || 0,
+        engagement_score: engagementScore?.data || 0,
+        fit_score: fitScore?.data || 0,
+        demographic_score: 10, // Placeholder
+        intent_score: 15, // Enhanced with AI
+        score_reasoning: scoreReasoning,
+        confidence_level: this.calculateConfidenceLevel(overallScore),
+        conversion_probability: this.predictConversionProbability(overallScore),
+        predicted_value: await this.predictLeadValue(leadId),
+        calculated_at: new Date()?.toISOString(),
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000)?.toISOString()
+      })?.select()?.single();
 
       if (insertError) throw insertError;
 
@@ -98,56 +97,25 @@ export class LeadScoringService {
   }
 
   /**
-   * Generate AI-powered reasoning for lead score
+   * Generate AI-powered reasoning for lead score via edge function
    * @param {string} leadId - UUID of the lead
    * @param {Object} scores - Object containing score components
    * @returns {Promise<string>} AI-generated score reasoning
    */
   static async generateScoreReasoning(leadId, scores) {
     try {
-      // Get lead context
-      const { data: leadData } = await supabase?.from('leads')?.select(`
-          first_name, last_name, job_title, priority, estimated_value,
-          company:company_id(name, industry, company_size)
-        `)?.eq('id', leadId)?.single();
-
-      // Get recent behavioral data
-      const { data: behaviorData } = await supabase?.from('lead_behavioral_metrics')?.select('event_type, event_timestamp, event_metadata')?.eq('lead_id', leadId)?.order('event_timestamp', { ascending: false })?.limit(10);
-
-      const prompt = `
-        Analyze this lead's scoring data and provide concise reasoning for the lead score:
-        
-        Lead Profile:
-        - Name: ${leadData?.first_name} ${leadData?.last_name}
-        - Title: ${leadData?.job_title || 'Not specified'}
-        - Company: ${leadData?.company?.name || 'Unknown'} (${leadData?.company?.industry || 'Unknown industry'})
-        - Priority: ${leadData?.priority}
-        - Estimated Value: $${leadData?.estimated_value || 0}
-        
-        Scoring Breakdown:
-        - Overall Score: ${scores?.overall}/100
-        - Behavioral Score: ${scores?.behavioral}/40
-        - Engagement Score: ${scores?.engagement}/30  
-        - Fit Score: ${scores?.fit}/30
-        
-        Recent Activities:
-        ${behaviorData?.map(b => `- ${b?.event_type} on ${new Date(b.event_timestamp)?.toLocaleDateString()}`)?.join('\n') || 'No recent activities'}
-        
-        Provide a brief 2-3 sentence explanation focusing on the key factors driving this score.
-      `;
-
-      const response = await openai?.chat?.completions?.create({
-        model: 'gpt-5-nano', // Fast model for quick scoring reasoning
-        messages: [
-          { role: 'system', content: 'You are a lead scoring analyst. Provide concise, actionable explanations for lead scores.' },
-          { role: 'user', content: prompt }
-        ],
-        reasoning_effort: 'minimal',
-        verbosity: 'low',
-        max_completion_tokens: 150
+      const { data, error } = await supabase?.functions?.invoke('ai-lead-scoring', {
+        body: {
+          action: 'reasoning',
+          leadId,
+          scores,
+        },
       });
 
-      return response?.choices?.[0]?.message?.content?.trim();
+      if (error) throw error;
+      if (data?.ok && data?.text) return data.text;
+
+      return `Score based on behavioral engagement (${scores?.behavioral}), interaction patterns (${scores?.engagement}), and profile fit (${scores?.fit}).`;
     } catch (error) {
       console.error('Error generating score reasoning:', error);
       return `Score based on behavioral engagement (${scores?.behavioral}), interaction patterns (${scores?.engagement}), and profile fit (${scores?.fit}).`;
@@ -164,13 +132,13 @@ export class LeadScoringService {
   static async recordBehavioralEvent(leadId, eventType, eventData = {}) {
     try {
       const { data, error } = await supabase?.from('lead_behavioral_metrics')?.insert({
-          lead_id: leadId,
-          event_type: eventType,
-          event_value: eventData?.value || 1,
-          event_metadata: eventData?.metadata || {},
-          source_url: eventData?.sourceUrl,
-          session_id: eventData?.sessionId
-        })?.select()?.single();
+        lead_id: leadId,
+        event_type: eventType,
+        event_value: eventData?.value || 1,
+        event_metadata: eventData?.metadata || {},
+        source_url: eventData?.sourceUrl,
+        session_id: eventData?.sessionId
+      })?.select()?.single();
 
       if (error) throw error;
 
@@ -272,7 +240,7 @@ export class LeadScoringService {
   static async bulkUpdateScores(leadIds) {
     try {
       const results = [];
-      
+
       // Process in batches to avoid overwhelming the system
       for (let i = 0; i < leadIds?.length; i += 10) {
         const batch = leadIds?.slice(i, i + 10);
@@ -289,7 +257,7 @@ export class LeadScoringService {
   }
 
   /**
-   * Get AI-powered lead recommendations
+   * Get AI-powered lead recommendations via edge function
    * @param {number} limit - Number of recommendations to return
    * @returns {Promise<Array>} AI-analyzed lead recommendations
    */
@@ -302,75 +270,44 @@ export class LeadScoringService {
             id, first_name, last_name, email, job_title,
             company:company_id(name, industry)
           )
-        `)?.gte('overall_score', 60)?.gt('expires_at', new Date()?.toISOString())?.order('overall_score', { ascending: false })?.limit(limit * 2); // Get more data for AI analysis
+        `)?.gte('overall_score', 60)?.gt('expires_at', new Date()?.toISOString())?.order('overall_score', { ascending: false })?.limit(limit * 2);
 
       if (!topLeads?.length) return [];
 
-      // Use AI to analyze and prioritize leads
-      const aiAnalysisPrompt = `
-        Analyze these ${topLeads?.length} high-scoring leads and recommend the top ${limit} for immediate action:
+      // Build a simplified leads summary for the edge function
+      const leadsData = topLeads.map(score => ({
+        lead_id: score?.lead_id,
+        name: `${score?.lead?.first_name || ''} ${score?.lead?.last_name || ''}`.trim(),
+        score: score?.overall_score,
+        category: score?.category,
+        predicted_value: score?.predicted_value || 0,
+      }));
 
-        Leads Data:
-        ${topLeads?.map((score, idx) => `
-        ${idx + 1}. ${score?.lead?.first_name} ${score?.lead?.last_name}
-           - Company: ${score?.lead?.company?.name}
-           - Score: ${score?.overall_score}/100 (${score?.category})
-           - Behavioral: ${score?.behavioral_score}, Engagement: ${score?.engagement_score}
-           - Conversion Probability: ${score?.conversion_probability}
-           - Predicted Value: $${score?.predicted_value}
-        `)?.join('')}
-
-        Return a JSON array with the top ${limit} lead IDs ranked by priority for immediate action, considering:
-        1. Score momentum and recent activity
-        2. Conversion probability vs predicted value
-        3. Engagement patterns and timing
-        4. Strategic account value
-
-        Format: [{"lead_id": "uuid", "priority_reason": "brief reason"}]
-      `;
-
-      const response = await openai?.chat?.completions?.create({
-        model: 'gpt-5-mini',
-        messages: [
-          { role: 'system', content: 'You are a sales AI analyst. Provide strategic lead prioritization.' },
-          { role: 'user', content: aiAnalysisPrompt }
-        ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'lead_recommendations',
-            schema: {
-              type: 'object',
-              properties: {
-                recommendations: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      lead_id: { type: 'string' },
-                      priority_reason: { type: 'string' }
-                    },
-                    required: ['lead_id', 'priority_reason']
-                  }
-                }
-              },
-              required: ['recommendations']
-            }
-          }
+      const { data, error } = await supabase?.functions?.invoke('ai-lead-scoring', {
+        body: {
+          action: 'recommendations',
+          leadsData,
+          limit,
         },
-        reasoning_effort: 'medium',
-        verbosity: 'low'
       });
 
-      const aiRecommendations = JSON.parse(response?.choices?.[0]?.message?.content);
-      
-      // Enrich recommendations with full lead data
-      const enrichedRecommendations = aiRecommendations?.recommendations?.map(rec => {
-          const leadData = topLeads?.find(l => l?.lead_id === rec?.lead_id);
-          return leadData ? { ...leadData, ai_priority_reason: rec?.priority_reason } : null;
-        })?.filter(Boolean)?.slice(0, limit);
+      if (error) throw error;
 
-      return enrichedRecommendations;
+      if (data?.ok !== false && data?.recommendations) {
+        // Enrich recommendations with full lead data
+        const enrichedRecommendations = data.recommendations
+          .map(rec => {
+            const leadData = topLeads?.find(l => l?.lead_id === rec?.lead_id);
+            return leadData ? { ...leadData, ai_priority_reason: rec?.priority_reason } : null;
+          })
+          .filter(Boolean)
+          .slice(0, limit);
+
+        return enrichedRecommendations;
+      }
+
+      // If AI didn't return valid recs, fall through to fallback
+      throw new Error('No AI recommendations returned');
     } catch (error) {
       console.error('Error generating AI lead recommendations:', error);
       // Fallback to simple score-based recommendations
@@ -403,7 +340,7 @@ export class LeadScoringService {
       if (!data) return 0;
 
       let predictedValue = data?.estimated_value || 0;
-      
+
       // Adjust based on company size and priority
       if (data?.company?.company_size > 100) predictedValue *= 1.5;
       if (data?.priority === 'high') predictedValue *= 1.3;
@@ -431,7 +368,7 @@ export class LeadScoringService {
       }
     }
 
-    const highValueEvents = recentEvents?.filter(e => 
+    const highValueEvents = recentEvents?.filter(e =>
       ['demo_request', 'pricing_view', 'meeting_scheduled']?.includes(e?.event_type)
     )?.length || 0;
 

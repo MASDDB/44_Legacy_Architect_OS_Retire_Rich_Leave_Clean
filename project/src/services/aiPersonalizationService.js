@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase';
-import openai from '../lib/openai';
 
 class AIPersonalizationService {
   /**
@@ -27,7 +26,7 @@ class AIPersonalizationService {
 
       // Apply personalization rules to get the best matching rule
       const selectedRule = await this._selectBestRule(personalizationRules, leadData);
-      
+
       if (!selectedRule) {
         return {
           personalizedContent: originalTemplate,
@@ -52,22 +51,22 @@ class AIPersonalizationService {
 
       // Save personalization history
       const { data: historyRecord } = await supabase?.from('ai_message_personalizations')?.insert({
-          lead_id: leadId,
-          campaign_id: campaignId,
-          message_type: messageType,
-          original_template: originalTemplate,
-          personalized_content: personalizedContent,
-          personalization_rules_used: [{
-            rule_id: selectedRule?.id,
-            rule_name: selectedRule?.name
-          }],
-          ai_model_used: aiModel,
-          processing_time_ms: processingTime,
-          lead_data_used: leadData?.lead_info,
-          behavioral_data_used: leadData?.behavioral_metrics || {},
-          confidence_score: confidence,
-          created_by: (await supabase?.auth?.getUser())?.data?.user?.id
-        })?.select()?.single();
+        lead_id: leadId,
+        campaign_id: campaignId,
+        message_type: messageType,
+        original_template: originalTemplate,
+        personalized_content: personalizedContent,
+        personalization_rules_used: [{
+          rule_id: selectedRule?.id,
+          rule_name: selectedRule?.name
+        }],
+        ai_model_used: aiModel,
+        processing_time_ms: processingTime,
+        lead_data_used: leadData?.lead_info,
+        behavioral_data_used: leadData?.behavioral_metrics || {},
+        confidence_score: confidence,
+        created_by: (await supabase?.auth?.getUser())?.data?.user?.id
+      })?.select()?.single();
 
       return {
         personalizedContent,
@@ -96,17 +95,17 @@ class AIPersonalizationService {
   async createPersonalizationRule(ruleData) {
     try {
       const { data, error } = await supabase?.from('ai_personalization_rules')?.insert({
-          name: ruleData?.name,
-          description: ruleData?.description,
-          personalization_type: ruleData?.personalizationType,
-          ai_model: ruleData?.aiModel || 'gpt-5',
-          conditions: ruleData?.conditions || {},
-          template_variables: ruleData?.templateVariables || {},
-          prompt_template: ruleData?.promptTemplate,
-          is_active: ruleData?.isActive !== false,
-          priority: ruleData?.priority || 1,
-          created_by: (await supabase?.auth?.getUser())?.data?.user?.id
-        })?.select()?.single();
+        name: ruleData?.name,
+        description: ruleData?.description,
+        personalization_type: ruleData?.personalizationType,
+        ai_model: ruleData?.aiModel || 'gpt-5',
+        conditions: ruleData?.conditions || {},
+        template_variables: ruleData?.templateVariables || {},
+        prompt_template: ruleData?.promptTemplate,
+        is_active: ruleData?.isActive !== false,
+        priority: ruleData?.priority || 1,
+        created_by: (await supabase?.auth?.getUser())?.data?.user?.id
+      })?.select()?.single();
 
       if (error) throw error;
       return data;
@@ -142,10 +141,10 @@ class AIPersonalizationService {
   async getPersonalizationAnalytics(ruleId, startDate, endDate) {
     try {
       const { data, error } = await supabase?.rpc('calculate_personalization_performance', {
-          rule_uuid: ruleId,
-          start_date: startDate,
-          end_date: endDate
-        });
+        rule_uuid: ruleId,
+        start_date: startDate,
+        end_date: endDate
+      });
 
       if (error) throw error;
       return data;
@@ -169,20 +168,20 @@ class AIPersonalizationService {
       // Create default settings if none exist
       if (error && error?.code === 'PGRST116') {
         const { data: newSettings, error: createError } = await supabase?.from('ai_personalization_settings')?.insert({
-            user_id: user?.id,
-            default_ai_model: 'gpt-5',
-            enable_behavioral_personalization: true,
-            enable_demographic_personalization: true,
-            enable_engagement_personalization: true,
-            enable_timing_optimization: true,
-            max_processing_time_ms: 5000,
-            fallback_to_original: true,
-            api_settings: {
-              max_tokens: 500,
-              reasoning_effort: 'medium',
-              verbosity: 'medium'
-            }
-          })?.select()?.single();
+          user_id: user?.id,
+          default_ai_model: 'gpt-5',
+          enable_behavioral_personalization: true,
+          enable_demographic_personalization: true,
+          enable_engagement_personalization: true,
+          enable_timing_optimization: true,
+          max_processing_time_ms: 5000,
+          fallback_to_original: true,
+          api_settings: {
+            max_tokens: 500,
+            reasoning_effort: 'medium',
+            verbosity: 'medium'
+          }
+        })?.select()?.single();
 
         if (createError) throw createError;
         data = newSettings;
@@ -208,10 +207,10 @@ class AIPersonalizationService {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase?.from('ai_personalization_settings')?.upsert({
-          user_id: user?.id,
-          ...settings,
-          updated_at: new Date()?.toISOString()
-        })?.select()?.single();
+        user_id: user?.id,
+        ...settings,
+        updated_at: new Date()?.toISOString()
+      })?.select()?.single();
 
       if (error) throw error;
       return data;
@@ -237,7 +236,7 @@ class AIPersonalizationService {
       if (filters?.leadId) {
         query = query?.eq('lead_id', filters?.leadId);
       }
-      
+
       if (filters?.campaignId) {
         query = query?.eq('campaign_id', filters?.campaignId);
       }
@@ -273,7 +272,7 @@ class AIPersonalizationService {
 
     // Sort rules by priority and evaluate conditions
     const sortedRules = rules?.sort((a, b) => (b?.priority || 1) - (a?.priority || 1));
-    
+
     for (const rule of sortedRules) {
       if (this._evaluateRuleConditions(rule, leadData)) {
         return rule;
@@ -295,13 +294,13 @@ class AIPersonalizationService {
 
     try {
       // Check engagement conditions
-      if (conditions?.min_email_open_rate && 
-          (!engagement?.email_open_rate || engagement?.email_open_rate < conditions?.min_email_open_rate)) {
+      if (conditions?.min_email_open_rate &&
+        (!engagement?.email_open_rate || engagement?.email_open_rate < conditions?.min_email_open_rate)) {
         return false;
       }
 
-      if (conditions?.min_website_visits && 
-          (!engagement?.website_visits || engagement?.website_visits < conditions?.min_website_visits)) {
+      if (conditions?.min_website_visits &&
+        (!engagement?.website_visits || engagement?.website_visits < conditions?.min_website_visits)) {
         return false;
       }
 
@@ -324,7 +323,7 @@ class AIPersonalizationService {
         const priorityValues = { 'low': 1, 'medium': 2, 'high': 3, 'urgent': 4 };
         const leadPriorityValue = priorityValues?.[leadInfo?.priority] || 1;
         const minPriorityValue = priorityValues?.[conditions?.min_priority] || 1;
-        
+
         if (leadPriorityValue < minPriorityValue) {
           return false;
         }
@@ -338,33 +337,38 @@ class AIPersonalizationService {
   }
 
   /**
-   * Generates personalized content using OpenAI
+   * Generates personalized content via server-side AI edge function
    * @private
    */
   async _generatePersonalizedContent(originalTemplate, rule, leadData, aiModel) {
     try {
-      let prompt = this._buildPersonalizationPrompt(originalTemplate, rule, leadData);
+      const leadInfo = leadData?.lead_info || {};
 
-      const response = await openai?.chat?.completions?.create({
-        model: aiModel,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert marketing copywriter specializing in personalized messaging. Create compelling, personalized messages that feel natural and relevant to the recipient. Keep the tone professional yet engaging.'
+      const { data, error } = await supabase?.functions?.invoke('ai-personalize', {
+        body: {
+          template: originalTemplate,
+          rule: {
+            name: rule?.name,
+            description: rule?.description,
           },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        reasoning_effort: rule?.template_variables?.reasoning_effort || 'medium',
-        verbosity: rule?.template_variables?.verbosity || 'medium',
-        max_completion_tokens: 500
+          leadData: {
+            first_name: leadInfo?.first_name,
+            last_name: leadInfo?.last_name,
+            company_name: leadInfo?.company,
+            industry: leadInfo?.industry,
+            job_title: leadInfo?.job_title,
+          },
+          model: aiModel,
+        },
       });
 
-      return response?.choices?.[0]?.message?.content?.trim();
+      if (error) throw error;
+      if (data?.ok && data?.text) return data.text;
+
+      // Fallback if AI returned empty
+      return this._basicTemplateReplacement(originalTemplate, leadData);
     } catch (error) {
-      console.error('OpenAI API error:', error);
+      console.error('AI personalization edge function error:', error);
       // Fallback to basic template replacement
       return this._basicTemplateReplacement(originalTemplate, leadData);
     }
@@ -411,7 +415,7 @@ class AIPersonalizationService {
    */
   _basicTemplateReplacement(template, leadData) {
     const leadInfo = leadData?.lead_info || {};
-    
+
     let result = template;
     result = result?.replace(/{{first_name}}/g, leadInfo?.first_name || 'there');
     result = result?.replace(/{{last_name}}/g, leadInfo?.last_name || '');
