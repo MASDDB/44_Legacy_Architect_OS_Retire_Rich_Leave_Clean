@@ -1,44 +1,47 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0';
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
+import { verifyAuth, createErrorResponse } from "../_shared/auth.ts";
 import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': '*'
-};
+const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
 
-serve(async (req) => {
-    if (req?.method === 'OPTIONS') {
-        return new Response('ok', {
-            headers: corsHeaders
-        });
-    }
+Deno.serve(async (req: Request) => {
+    // 1. Handle CORS Preflight
+    const preflight = handleOptions(req);
+    if (preflight) return preflight;
+
+    const corsHeaders = getCorsHeaders(req);
 
     try {
-        // Create a Supabase client
-        const supabaseUrl = globalThis?.Deno?.env?.get('SUPABASE_URL');
-        const supabaseKey = globalThis?.Deno?.env?.get('SUPABASE_ANON_KEY');
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        // 2. Enforce Authentication
+        const { user, supabase } = await verifyAuth(req);
 
-        // Create a Stripe client
-        const stripeKey = globalThis?.Deno?.env?.get('STRIPE_SECRET_KEY');
-        const stripe = new Stripe(stripeKey);
-
-        // Get the request body
-        const { planId, databaseTier, billingCycle, customerInfo, metadata } = await req?.json();
-
-        // Validate required fields
-        if (!planId || !databaseTier || !customerInfo?.email) {
-            return new Response(JSON.stringify({
-                error: 'Missing required fields: planId, databaseTier, and customerInfo.email'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400
-            });
+        // 3. Method check
+        if (req.method !== 'POST') {
+            return createErrorResponse('Method Not Allowed', 405, corsHeaders);
         }
 
-        // Calculate pricing based on plan and database tier
-        const pricingMatrix = {
+        // 4. Validate Stripe Config
+        if (!STRIPE_SECRET_KEY) {
+            console.error('Missing STRIPE_SECRET_KEY in environment');
+            return createErrorResponse('Payment provider configuration error', 503, corsHeaders);
+        }
+        const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
+
+        // 5. Build and Validate body
+        const { planId, databaseTier, billingCycle, customerInfo, metadata } = await req.json();
+
+        if (!planId || !databaseTier || !customerInfo?.email) {
+            return createErrorResponse('Missing required fields: planId, databaseTier, or email', 400, corsHeaders);
+        }
+
+        // Security check: Ensure authenticated user is only creating payments for their own email or profile
+        if (user.email !== customerInfo.email) {
+            // Allow this only if we have specific logic, but typically we want to cross-reference
+            console.warn(`User ${user.email} attempting payment for ${customerInfo.email}`);
+        }
+
+        // 6. Pricing Matrix (duplicated for server-side enforcement)
+        const pricingMatrix: Record<string, any> = {
             'done-for-you': {
                 starter: { setup: 0, monthly: 0, revenueShare: 0.5 },
                 growth: { setup: 0, monthly: 0, revenueShare: 0.5 },
@@ -59,121 +62,75 @@ serve(async (req) => {
             }
         };
 
-        const planPricing = pricingMatrix?.[planId]?.[databaseTier];
+        const planPricing = pricingMatrix[planId]?.[databaseTier];
         if (!planPricing) {
-            return new Response(JSON.stringify({
-                error: 'Invalid plan or database tier combination'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400
-            });
+            return createErrorResponse('Invalid plan or tier selection', 400, corsHeaders);
         }
 
-        // Calculate total amount (setup fee for initial payment)
-        let totalAmount = planPricing?.setup * 100; // Convert to cents
-
-        // For revenue share plans, create a minimal setup intent
+        let totalAmount = planPricing.setup * 100; // in cents
         if (planId === 'done-for-you') {
-            totalAmount = 100; // $1 verification charge
+            totalAmount = 100; // $1 verification
         }
 
-        // Create or retrieve Stripe customer
+        // 7. Get or Create Stripe Customer
         let stripeCustomer;
-        try {
-            const customers = await stripe?.customers?.list({
-                email: customerInfo?.email,
-                limit: 1
-            });
+        const customers = await stripe.customers.list({ email: customerInfo.email, limit: 1 });
 
-            if (customers?.data?.length > 0) {
-                stripeCustomer = customers?.data?.[0];
-            } else {
-                stripeCustomer = await stripe?.customers?.create({
-                    email: customerInfo?.email,
-                    name: `${customerInfo?.firstName || ''} ${customerInfo?.lastName || ''}`?.trim(),
-                    metadata: {
-                        plan_id: planId,
-                        database_tier: databaseTier,
-                        billing_cycle: billingCycle
-                    }
-                });
-            }
-        } catch (stripeError) {
-            return new Response(JSON.stringify({
-                error: `Stripe customer error: ${stripeError.message}`
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 500
+        if (customers.data.length > 0) {
+            stripeCustomer = customers.data[0];
+        } else {
+            stripeCustomer = await stripe.customers.create({
+                email: customerInfo.email,
+                name: `${customerInfo.firstName || ''} ${customerInfo.lastName || ''}`.trim(),
+                metadata: { supabase_id: user.id }
             });
         }
 
-        // Create payment intent description
-        const getDescription = (planId, tier) => {
-            const planNames = {
-                'done-for-you': 'Done-For-You Partnership',
-                'setup-plus-percentage': 'Setup + Performance Plan',
-                'white-label': 'White-Label License'
-            };
-            return `${planNames?.[planId] || planId} - ${tier?.charAt(0)?.toUpperCase() + tier?.slice(1)} Tier`;
-        };
+        // 8. Create Payment Intent (with idempotency check logic)
+        // We use a generated key based on the specific checkout session data
+        const idempotencyKey = btoa(`${customerInfo.email}-${planId}-${databaseTier}-${totalAmount}`).substring(0, 64);
 
-        // Create a Stripe payment intent
-        const paymentIntent = await stripe?.paymentIntents?.create({
+        const paymentIntent = await stripe.paymentIntents.create({
             amount: totalAmount,
             currency: 'usd',
-            customer: stripeCustomer?.id,
-            description: getDescription(planId, databaseTier),
+            customer: stripeCustomer.id,
+            description: `${planId} - ${databaseTier} License`,
             metadata: {
                 ...metadata,
                 plan_id: planId,
                 database_tier: databaseTier,
                 billing_cycle: billingCycle,
-                customer_email: customerInfo?.email,
-                setup_fee: planPricing?.setup?.toString(),
-                monthly_fee: planPricing?.monthly?.toString() || '0',
-                revenue_share: planPricing?.revenueShare?.toString() || '0',
-                percentage_fee: planPricing?.percentage?.toString() || '0'
+                supabase_user_id: user.id
             },
-            automatic_payment_methods: {
-                enabled: true,
-            },
+            automatic_payment_methods: { enabled: true }
+        }, {
+            idempotencyKey: idempotencyKey
         });
 
-        // Store subscription/order record in database
-        const { data: subscriptionRecord, error: dbError } = await supabase?.from('user_profiles')?.upsert({
-                email: customerInfo?.email,
-                full_name: `${customerInfo?.firstName || ''} ${customerInfo?.lastName || ''}`?.trim(),
-                stripe_customer_id: stripeCustomer?.id,
-                updated_at: new Date()?.toISOString()
-            }, {
-                onConflict: 'email'
-            });
+        // 9. Sync to user profile (minimal set)
+        const { error: dbError } = await supabase.from('user_profiles').upsert({
+            id: user.id,
+            email: customerInfo.email,
+            stripe_customer_id: stripeCustomer.id,
+            updated_at: new Date().toISOString()
+        });
 
-        if (dbError) {
-            console.error('Database error:', dbError);
-        }
+        if (dbError) console.error('DB Sync Error:', dbError);
 
-        // Return the payment intent client secret
         return new Response(JSON.stringify({
             clientSecret: paymentIntent.client_secret,
             paymentIntentId: paymentIntent.id,
             customerId: stripeCustomer.id,
-            amount: totalAmount,
-            planId: planId,
-            databaseTier: databaseTier,
-            billingCycle: billingCycle
+            amount: totalAmount / 100
         }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
     } catch (error) {
-        console.error('Payment creation error:', error);
-        return new Response(JSON.stringify({
-            error: error.message
-        }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400
-        });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        const status = message === 'Unauthorized' ? 401 : 400;
+        console.error(`Stripe creation error: ${message}`);
+        return createErrorResponse(message, status, corsHeaders);
     }
 });

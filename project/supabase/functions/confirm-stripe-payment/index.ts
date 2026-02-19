@@ -1,135 +1,119 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0';
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
+import { verifyAuth, createErrorResponse } from "../_shared/auth.ts";
 import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': '*'
-};
+const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
 
-serve(async (req) => {
-    if (req?.method === 'OPTIONS') {
-        return new Response('ok', {
-            headers: corsHeaders
-        });
-    }
+Deno.serve(async (req: Request) => {
+    // 1. Handle CORS Preflight
+    const preflight = handleOptions(req);
+    if (preflight) return preflight;
+
+    const corsHeaders = getCorsHeaders(req);
 
     try {
-        // Create a Supabase client
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        // 2. Enforce Authentication
+        const { user, supabase } = await verifyAuth(req);
 
-        // Create a Stripe client
-        const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-        const stripe = new Stripe(stripeKey);
+        // 3. Method check
+        if (req.method !== 'POST') {
+            return createErrorResponse('Method Not Allowed', 405, corsHeaders);
+        }
 
-        // Get the request body
-        const { paymentIntentId } = await req?.json();
-
+        // 4. Validate body
+        const { paymentIntentId } = await req.json();
         if (!paymentIntentId) {
-            return new Response(JSON.stringify({
-                error: 'Payment Intent ID is required'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400
-            });
+            return createErrorResponse('Payment Intent ID is required', 400, corsHeaders);
         }
 
-        // Retrieve payment intent from Stripe
-        const paymentIntent = await stripe?.paymentIntents?.retrieve(paymentIntentId);
+        // 5. Validate Provider Config
+        if (!STRIPE_SECRET_KEY) {
+            console.error('Missing STRIPE_SECRET_KEY in environment');
+            return createErrorResponse('Payment provider configuration error', 503, corsHeaders);
+        }
+        const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
 
+        // 6. Retrieve and Verify Payment Intent
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
         if (!paymentIntent) {
-            return new Response(JSON.stringify({
-                error: 'Payment Intent not found'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 404
-            });
+            return createErrorResponse('Payment Intent not found', 404, corsHeaders);
         }
 
-        // Extract metadata
-        const metadata = paymentIntent?.metadata;
-        const planId = metadata?.plan_id;
-        const databaseTier = metadata?.database_tier;
-        const customerEmail = metadata?.customer_email;
+        // SECURITY: Ensure this payment intent belongs to the authenticated user
+        // We check the 'supabase_user_id' we added to metadata during creation
+        if (paymentIntent.metadata.supabase_user_id !== user.id && paymentIntent.metadata.customer_email !== user.email) {
+            console.warn(`User ${user.id} attempted to confirm unauthorized payment intent ${paymentIntentId}`);
+            return createErrorResponse('Access Denied: Unauthorized payment confirmation', 403, corsHeaders);
+        }
 
-        // Update user profile with subscription information
-        const { data: userProfile, error: profileError } = await supabase?.from('user_profiles')?.update({
+        // 7. Extract metadata for profile updates
+        const { plan_id: planId, database_tier: databaseTier, customer_email: customerEmail } = paymentIntent.metadata;
+
+        // 8. Update User Profile
+        const { data: userProfile, error: profileError } = await supabase
+            .from('user_profiles')
+            .update({
                 subscription_plan: planId,
                 database_tier: databaseTier,
-                subscription_status: paymentIntent?.status === 'succeeded' ? 'active' : 'pending',
+                subscription_status: paymentIntent.status === 'succeeded' ? 'active' : 'pending',
                 stripe_payment_intent_id: paymentIntentId,
-                updated_at: new Date()?.toISOString()
-            })?.eq('email', customerEmail)?.select()?.single();
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+            .select()
+            .single();
 
-        if (profileError) {
-            console.error('Profile update error:', profileError);
-        }
+        if (profileError) console.error('Profile update error:', profileError);
 
-        // For recurring plans (white-label), set up subscription
-        if (planId === 'white-label' && paymentIntent?.status === 'succeeded') {
+        // 9. Handle Recurring Subscription (if applicable)
+        if (planId === 'white-label' && paymentIntent.status === 'succeeded' && !userProfile?.stripe_subscription_id) {
             try {
-                const monthlyAmount = parseFloat(metadata?.monthly_fee || '0') * 100;
-                
+                const monthlyAmount = parseFloat(paymentIntent.metadata.monthly_fee || '0') * 100;
                 if (monthlyAmount > 0) {
-                    // Create a subscription for recurring billing
-                    const subscription = await stripe?.subscriptions?.create({
-                        customer: paymentIntent?.customer,
+                    const subscription = await stripe.subscriptions.create({
+                        customer: paymentIntent.customer as string,
                         items: [{
                             price_data: {
                                 currency: 'usd',
-                                product_data: {
-                                    name: `${planId} - ${databaseTier} tier`,
-                                    metadata: {
-                                        plan_id: planId,
-                                        database_tier: databaseTier
-                                    }
-                                },
                                 unit_amount: monthlyAmount,
-                                recurring: {
-                                    interval: 'month'
+                                recurring: { interval: 'month' },
+                                product_data: {
+                                    name: `${planId} - ${databaseTier} License`,
+                                    metadata: { plan_id: planId, database_tier: databaseTier }
                                 }
                             }
                         }],
                         metadata: {
                             plan_id: planId,
                             database_tier: databaseTier,
-                            customer_email: customerEmail
+                            supabase_user_id: user.id
                         }
                     });
 
-                    // Update user profile with subscription ID
-                    await supabase?.from('user_profiles')?.update({
-                            stripe_subscription_id: subscription?.id
-                        })?.eq('email', customerEmail);
+                    await supabase.from('user_profiles')
+                        .update({ stripe_subscription_id: subscription.id })
+                        .eq('id', user.id);
                 }
-            } catch (subscriptionError) {
-                console.error('Subscription creation error:', subscriptionError);
-                // Continue - don't fail the confirmation
+            } catch (subError) {
+                console.error('Subscription creation failed during confirmation:', subError);
             }
         }
 
-        // Return success response
         return new Response(JSON.stringify({
             success: true,
             paymentStatus: paymentIntent.status,
-            planId: planId,
-            databaseTier: databaseTier,
-            subscriptionActive: paymentIntent.status === 'succeeded',
-            userProfile: userProfile
+            planId,
+            databaseTier,
+            userProfile
         }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
     } catch (error) {
-        console.error('Payment confirmation error:', error);
-        return new Response(JSON.stringify({
-            error: error.message
-        }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400
-        });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        const status = message === 'Unauthorized' ? 401 : 400;
+        console.error(`Payment confirmation error: ${message}`);
+        return createErrorResponse(message, status, corsHeaders);
     }
 });

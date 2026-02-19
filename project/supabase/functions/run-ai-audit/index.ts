@@ -1,70 +1,64 @@
-// supabase/functions/run-ai-audit/index.ts
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
+import { verifyAuth, createErrorResponse } from "../_shared/auth.ts";
 import OpenAI from "npm:openai@4.56.0";
 
-Deno.serve(async (req) => {
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+
+Deno.serve(async (req: Request) => {
+  // 1. Handle CORS Preflight
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = getCorsHeaders(req);
+
   try {
-    // Basic CORS (adjust origin if needed)
-    if (req.method === "OPTIONS") {
-      return new Response("ok", {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers":
-            "authorization, x-client-info, apikey, content-type",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-        },
-      });
+    // 2. Enforce Authentication
+    const { user } = await verifyAuth(req);
+
+    // 3. Method check
+    if (req.method !== 'POST') {
+      return createErrorResponse('Method Not Allowed', 405, corsHeaders);
     }
 
-    if (req.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), {
-        status: 405,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      });
-    }
-
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    // 4. Validate Provider Config
     if (!OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Missing OPENAI_API_KEY" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      });
+      console.error('Missing OPENAI_API_KEY in environment');
+      return createErrorResponse('AI provider configuration error', 503, corsHeaders);
     }
 
+    // 5. Build and Validate body
     const body = await req.json();
-    const { system, user, model } = body ?? {};
+    const { system, user: userPromptContent, model } = body ?? {};
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Missing 'user' content" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      });
+    if (!userPromptContent) {
+      return createErrorResponse("Missing 'user' prompt content", 400, corsHeaders);
     }
 
+    // 6. Execute AI Completion
     const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
     const completion = await openai.chat.completions.create({
       model: model || "gpt-4o-mini",
       messages: [
         ...(system ? [{ role: "system" as const, content: String(system) }] : []),
-        { role: "user" as const, content: String(user) },
+        { role: "user" as const, content: String(userPromptContent) },
       ],
       temperature: 0.2,
     });
 
     const text = completion.choices?.[0]?.message?.content ?? "";
 
+    console.log(`User ${user.id} executed AI Audit. Model: ${model || "gpt-4o-mini"}`);
+
     return new Response(JSON.stringify({ ok: true, text }), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-    });
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    const status = message === 'Unauthorized' ? 401 : 500;
+    console.error(`AI Audit function error: ${message}`);
+    return createErrorResponse(message, status, corsHeaders);
   }
 });

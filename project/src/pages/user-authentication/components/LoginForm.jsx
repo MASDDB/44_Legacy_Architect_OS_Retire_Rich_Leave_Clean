@@ -6,6 +6,7 @@ import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import Icon from '../../../components/AppIcon';
 import { AuthDebugger } from '../../../utils/authDebugger';
+import { logger } from '../../../lib/logger';
 
 const LoginForm = ({ onSwitchToRegister }) => {
   const navigate = useNavigate();
@@ -29,10 +30,10 @@ const LoginForm = ({ onSwitchToRegister }) => {
         const status = await AuthDebugger?.checkDemoUserStatus();
         setDemoStatus(status);
       } catch (error) {
-        console.warn('Failed to check demo user status:', error);
+        logger.warn('Failed to check demo user status:', error);
       }
     };
-    
+
     if (initialized) {
       checkDemoUsers();
     }
@@ -41,7 +42,7 @@ const LoginForm = ({ onSwitchToRegister }) => {
   // Redirect if already authenticated
   useEffect(() => {
     if (initialized && user) {
-      console.log('User already authenticated, redirecting to dashboard');
+      logger.info('User already authenticated, redirecting to dashboard');
       navigate('/main-dashboard');
     }
   }, [user, initialized, navigate]);
@@ -49,12 +50,12 @@ const LoginForm = ({ onSwitchToRegister }) => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e?.target;
     const newValue = type === 'checkbox' ? checked : value;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: newValue
     }));
-    
+
     // Clear error when user starts typing
     if (errors?.[name]) {
       setErrors(prev => ({
@@ -85,42 +86,42 @@ const LoginForm = ({ onSwitchToRegister }) => {
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsLoading(true);
     setErrors({}); // Clear previous errors
 
     try {
-      console.log('Attempting login with:', formData?.email);
-      
+      logger.info('Attempting login', { email: formData?.email });
+
       // Clean any corrupted auth data before login attempt
       AuthDebugger?.cleanCorruptedAuthData();
-      
+
       await signIn(formData?.email?.trim(), formData?.password);
-      
-      console.log('Login successful, navigating to dashboard');
-      
+
+      logger.info('Login successful, navigating to dashboard');
+
       // Navigate after successful login
       navigate('/main-dashboard');
-      
+
     } catch (error) {
-      console.error('Login error:', error);
-      
+      logger.error('Login error:', error);
+
       // Check if this is an email confirmation error
       if (error?.message?.includes('check your email and click the confirmation link')) {
         setShowResendButton(true);
         setResendEmail(formData?.email);
       }
-      
+
       // Enhanced error handling
       let errorMessage = error?.message || 'Login failed. Please try again.';
-      
+
       // Set user-friendly error message
       setErrors({
         general: errorMessage
       });
-      
+
     } finally {
       setIsLoading(false);
     }
@@ -128,19 +129,19 @@ const LoginForm = ({ onSwitchToRegister }) => {
 
   const handleResendConfirmation = async () => {
     if (!resendEmail) return;
-    
+
     setIsLoading(true);
     setErrors({});
-    
+
     try {
       await resendConfirmation(resendEmail);
-      
+
       setErrors({
         success: `New confirmation email sent to ${resendEmail}. Please check your inbox and spam folder.`
       });
-      
+
     } catch (error) {
-      console.error('Resend confirmation error:', error);
+      logger.error('Resend confirmation error:', error);
       setErrors({
         general: error?.message || 'Failed to resend confirmation email. Please try again.'
       });
@@ -152,32 +153,32 @@ const LoginForm = ({ onSwitchToRegister }) => {
   const handleDemoLogin = async () => {
     setIsLoading(true);
     setErrors({}); // Clear previous errors
-    
+
     const demoCredentials = {
       email: 'admin@crm-demo.com',
       password: 'demo123456'
     };
-    
+
     try {
-      console.log('Attempting demo login...');
-      
+      logger.info('Attempting demo login...');
+
       // Clean corrupted data before demo login
       AuthDebugger?.cleanCorruptedAuthData();
-      
+
       await signIn(demoCredentials?.email, demoCredentials?.password);
-      
-      console.log('Demo login successful, navigating to dashboard');
-      
+
+      logger.info('Demo login successful, navigating to dashboard');
+
       // Navigate after successful login
       navigate('/main-dashboard');
-      
+
     } catch (error) {
-      console.error('Demo login error:', error);
-      
+      logger.error('Demo login error:', error);
+
       setErrors({
         general: error?.message || 'Demo login failed. The demo users may need to be set up properly. Please try creating a new account instead.'
       });
-      
+
     } finally {
       setIsLoading(false);
     }
@@ -186,17 +187,17 @@ const LoginForm = ({ onSwitchToRegister }) => {
   const handleAuthCleanup = async () => {
     setIsLoading(true);
     setErrors({});
-    
+
     try {
-      console.log('🧹 Starting auth cleanup...');
-      
+      logger.info('🧹 Starting auth cleanup...');
+
       const result = await AuthDebugger?.emergencyRecovery();
-      
+
       if (result?.success) {
         setErrors({
           success: `✅ Auth cleanup completed! ${result?.recommendation}`
         });
-        
+
         // Refresh the page after a delay
         setTimeout(() => {
           window.location?.reload();
@@ -206,9 +207,9 @@ const LoginForm = ({ onSwitchToRegister }) => {
           general: `❌ Cleanup failed: ${result?.error}. Please refresh the page manually.`
         });
       }
-      
+
     } catch (error) {
-      console.error('Cleanup error:', error);
+      logger.error('Cleanup error:', error);
       setErrors({
         general: '❌ Cleanup failed. Please refresh the page and try again.'
       });
@@ -280,7 +281,7 @@ const LoginForm = ({ onSwitchToRegister }) => {
             <Icon name="Users" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-blue-800 flex-1">
               <p className="font-medium mb-2">🚀 Demo Credentials Available</p>
-              
+
               {/* Demo Status Indicator */}
               {demoStatus?.data && (
                 <div className="mb-3 p-2 bg-blue-100 rounded text-xs">
@@ -294,7 +295,7 @@ const LoginForm = ({ onSwitchToRegister }) => {
                   ))}
                 </div>
               )}
-              
+
               <div className="space-y-2">
                 <div className="bg-blue-100 rounded p-2">
                   <p className="font-medium">Admin Account:</p>

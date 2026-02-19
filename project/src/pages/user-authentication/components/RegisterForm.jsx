@@ -5,6 +5,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import Icon from '../../../components/AppIcon';
+import { logger } from '../../../lib/logger';
 
 const RegisterForm = ({ onSwitchToLogin }) => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
   // Redirect if already authenticated
   useEffect(() => {
     if (initialized && user) {
-      console.log('User already authenticated, redirecting to dashboard');
+      logger.info('User already authenticated, redirecting to dashboard');
       navigate('/main-dashboard');
     }
   }, [user, initialized, navigate]);
@@ -32,12 +33,12 @@ const RegisterForm = ({ onSwitchToLogin }) => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e?.target;
     const newValue = type === 'checkbox' ? checked : value;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: newValue
     }));
-    
+
     // Clear error when user starts typing
     if (errors?.[name]) {
       setErrors(prev => ({
@@ -82,32 +83,32 @@ const RegisterForm = ({ onSwitchToLogin }) => {
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsLoading(true);
     setErrors({}); // Clear previous errors
 
     try {
-      console.log('Attempting registration for:', formData?.email);
-      
+      logger.info('Attempting registration', { email: formData?.email });
+
       await signUp(formData?.email?.trim(), formData?.password, {
         full_name: formData?.fullName?.trim()
       });
-      
-      console.log('Registration successful');
-      
+
+      logger.info('Registration successful');
+
       // Show success message or navigate
       navigate('/main-dashboard');
-      
+
     } catch (error) {
-      console.error('Registration error:', error);
-      
+      logger.error('Registration error:', error);
+
       // Set user-friendly error message
       setErrors({
         general: error?.message || 'Registration failed. Please try again.'
       });
-      
+
     } finally {
       setIsLoading(false);
     }
@@ -251,7 +252,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => console.log('Google registration not implemented yet')}
+            onClick={() => logger.info('Google registration clicked')}
             disabled={isLoading || loading}
             iconName="Chrome"
             iconPosition="left"
@@ -262,7 +263,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => console.log('Microsoft registration not implemented yet')}
+            onClick={() => logger.info('Microsoft registration clicked')}
             disabled={isLoading || loading}
             iconName="Building2"
             iconPosition="left"

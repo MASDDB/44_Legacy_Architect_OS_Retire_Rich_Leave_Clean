@@ -19,13 +19,14 @@ import ABTestingSetup from './components/ABTestingSetup';
 import LeadScoringPanel from './components/LeadScoringPanel';
 import AIPersonalizationPanel from './components/AIPersonalizationPanel';
 import AIPersonalizationSettings from './components/AIPersonalizationSettings';
+import { logger } from '../../lib/logger';
 
 const CampaignBuilder = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [templateLibraryCollapsed, setTemplateLibraryCollapsed] = useState(false);
   const [activeView, setActiveView] = useState('advanced-builder'); // 'builder', 'advanced-builder', 'settings'
-  
+
   // Campaign state
   const [messages, setMessages] = useState([]);
   const [campaignSettings, setCampaignSettings] = useState({
@@ -123,7 +124,7 @@ const CampaignBuilder = () => {
   };
 
   const handleSaveMessage = (updatedMessage) => {
-    setMessages(prev => prev?.map(msg => 
+    setMessages(prev => prev?.map(msg =>
       msg?.id === updatedMessage?.id ? updatedMessage : msg
     ));
     setShowMessageEditor(false);
@@ -145,13 +146,18 @@ const CampaignBuilder = () => {
 
   const handleLaunchCampaign = () => {
     // Simulate campaign launch
-    console.log('Launching campaign:', {
+    logger.info('Launching campaign:', {
+      name: campaignSettings.name,
+      messageCount: messages.length,
+    });
+
+    logger.debug('Full campaign launch data:', {
       settings: campaignSettings,
       messages: messages,
       flowNodes: flowNodes,
       flowEdges: flowEdges
     });
-    
+
     // Show success message and redirect
     alert('Advanced campaign launched successfully! Redirecting to analytics dashboard...');
     navigate('/analytics-dashboard');
@@ -159,7 +165,8 @@ const CampaignBuilder = () => {
 
   const handleSaveCampaign = () => {
     // Simulate saving campaign
-    console.log('Saving campaign:', {
+    logger.info('Saving campaign:', { name: campaignSettings.name });
+    logger.debug('Full campaign save data:', {
       settings: campaignSettings,
       messages: messages,
       flowNodes: flowNodes,
@@ -172,28 +179,29 @@ const CampaignBuilder = () => {
   const handleSMSCampaign = () => {
     // For demo purposes, simulate selected leads
     const mockLeads = [
-      { 
-        id: 'lead-1', 
-        first_name: 'John', 
-        last_name: 'Smith', 
+      {
+        id: 'lead-1',
+        first_name: 'John',
+        last_name: 'Smith',
         phone: '+1234567890',
         company: { name: 'Tech Solutions Inc' }
       },
-      { 
-        id: 'lead-2', 
-        first_name: 'Sarah', 
-        last_name: 'Johnson', 
+      {
+        id: 'lead-2',
+        first_name: 'Sarah',
+        last_name: 'Johnson',
         phone: '+1987654321',
         company: { name: 'Digital Marketing Co' }
       }
     ];
-    
+
     setSelectedLeads(mockLeads);
     setShowSMSBuilder(true);
   };
 
   const handleSMSSent = (results) => {
-    console.log('SMS Campaign Results:', results);
+    logger.info('SMS Campaign completed', { success: results?.success });
+    logger.debug('SMS Campaign Results:', results);
   };
 
   const handleCloseSMSBuilder = () => {
@@ -205,38 +213,39 @@ const CampaignBuilder = () => {
   const handleVoiceCampaign = () => {
     // For demo purposes, simulate selected leads
     const mockLeads = [
-      { 
-        id: 'lead-1', 
-        first_name: 'John', 
-        last_name: 'Smith', 
+      {
+        id: 'lead-1',
+        first_name: 'John',
+        last_name: 'Smith',
         phone: '+1234567890',
         email: 'john.smith@techsolutions.com',
         company: { name: 'Tech Solutions Inc' }
       },
-      { 
-        id: 'lead-2', 
-        first_name: 'Sarah', 
-        last_name: 'Johnson', 
+      {
+        id: 'lead-2',
+        first_name: 'Sarah',
+        last_name: 'Johnson',
         phone: '+1987654321',
         email: 'sarah@digitalmarketing.com',
         company: { name: 'Digital Marketing Co' }
       },
-      { 
-        id: 'lead-3', 
-        first_name: 'Michael', 
-        last_name: 'Brown', 
+      {
+        id: 'lead-3',
+        first_name: 'Michael',
+        last_name: 'Brown',
         phone: '+1555123456',
         email: 'michael.brown@startupventures.com',
         company: { name: 'Startup Ventures' }
       }
     ];
-    
+
     setSelectedLeads(mockLeads);
     setShowVoiceBuilder(true);
   };
 
   const handleVoiceSent = (results) => {
-    console.log('Voice Campaign Results:', results);
+    logger.info('Voice Campaign completed', { success: results?.success });
+    logger.debug('Voice Campaign Results:', results);
     // Show success notification or update UI as needed
   };
 
@@ -247,15 +256,16 @@ const CampaignBuilder = () => {
 
   // Advanced flow handlers
   const handleNodesChange = (changes) => {
-    console.log('Nodes changed:', changes);
+    logger.debug('Nodes changed:', changes);
+    // Here you would typically update flowNodes state if needed by the library
   };
 
   const handleEdgesChange = (changes) => {
-    console.log('Edges changed:', changes);
+    logger.debug('Edges changed:', changes);
   };
 
   const handleConnect = (connection) => {
-    console.log('New connection:', connection);
+    logger.debug('New connection:', connection);
   };
 
   // Trigger configuration handlers
@@ -327,12 +337,12 @@ const CampaignBuilder = () => {
       score: leadScore?.overall_score,
       category: leadScore?.category
     };
-    
+
     setSelectedScoredLeads(prev => [...prev, leadData]);
     setShowLeadScoring(false);
-    
+
     // Show success feedback
-    console.log('Added lead to campaign:', leadData);
+    logger.info('Added lead to campaign:', { leadId: leadData.id });
   };
 
   const handlePersonalizationApplied = (result) => {
@@ -345,19 +355,18 @@ const CampaignBuilder = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <Sidebar 
-        isCollapsed={sidebarCollapsed} 
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+      <Sidebar
+        isCollapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
-      <main className={`transition-all duration-300 ${
-        sidebarCollapsed ? 'ml-16' : 'ml-60'
-      } mt-16`}>
+      <main className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-60'
+        } mt-16`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Campaign Configuration */}
             <div className="lg:col-span-2 space-y-6">
               <Breadcrumb />
-              
+
               {/* Page Header */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
                 <div>
@@ -366,7 +375,7 @@ const CampaignBuilder = () => {
                     Create sophisticated multi-channel AI-powered campaigns with visual workflow builder, conditional logic, and advanced triggers
                   </p>
                 </div>
-                
+
                 <div className="flex items-center space-x-3 mt-4 lg:mt-0">
                   <Button
                     variant={activeView === 'builder' ? 'default' : 'outline'}
@@ -424,7 +433,7 @@ const CampaignBuilder = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
@@ -436,7 +445,7 @@ const CampaignBuilder = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
@@ -450,7 +459,7 @@ const CampaignBuilder = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
@@ -464,7 +473,7 @@ const CampaignBuilder = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-info/10 rounded-lg flex items-center justify-center">
@@ -499,11 +508,10 @@ const CampaignBuilder = () => {
                   <div className="flex items-center space-x-4">
                     <h3 className="text-lg font-semibold text-foreground">Advanced Features</h3>
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        campaignSettings?.flowType === 'sequential' ? 'bg-blue-100 text-blue-800' :
-                        campaignSettings?.flowType === 'conditional' ? 'bg-green-100 text-green-800' :
-                        campaignSettings?.flowType === 'trigger-based'? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800'
-                      }`}>
+                      <span className={`px-2 py-1 text-xs rounded-full ${campaignSettings?.flowType === 'sequential' ? 'bg-blue-100 text-blue-800' :
+                          campaignSettings?.flowType === 'conditional' ? 'bg-green-100 text-green-800' :
+                            campaignSettings?.flowType === 'trigger-based' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800'
+                        }`}>
                         {campaignSettings?.flowType?.replace('-', ' ')?.toUpperCase()}
                       </span>
                       {campaignSettings?.multiChannelCoordination?.enabled && (
@@ -513,7 +521,7 @@ const CampaignBuilder = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Button
                       variant="ghost"

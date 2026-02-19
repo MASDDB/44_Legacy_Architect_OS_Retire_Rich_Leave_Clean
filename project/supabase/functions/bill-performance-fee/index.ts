@@ -1,71 +1,40 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
+import { verifyAuth, createErrorResponse } from "../_shared/auth.ts";
 import Stripe from "npm:stripe@12.0.0";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
-  }
+  // 1. Handle CORS Preflight
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = getCorsHeaders(req);
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // 2. Enforce Authentication
+    const { user, supabase } = await verifyAuth(req);
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      throw new Error("Stripe secret key not configured");
-    }
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: "2023-10-16",
-    });
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
-      );
+    // 3. Method check
+    if (req.method !== 'POST') {
+      return createErrorResponse('Method Not Allowed', 405, corsHeaders);
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
-      );
+    // 4. Validate Provider Config
+    if (!STRIPE_SECRET_KEY) {
+      console.error('Missing STRIPE_SECRET_KEY in environment');
+      return createErrorResponse('Payment provider configuration error', 503, corsHeaders);
     }
+    const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2023-10-16" });
 
+    // 5. Get body
     const { campaignId } = await req.json();
 
     if (!campaignId) {
-      return new Response(
-        JSON.stringify({ error: "Campaign ID is required" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
-      );
+      return createErrorResponse("Campaign ID is required", 400, corsHeaders);
     }
 
+    // 6. Ownership Check (Campaign must belong to the authenticated user)
     const { data: campaign, error: campaignError } = await supabase
       .from("cash_boost_campaigns")
       .select("*")
@@ -74,35 +43,18 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (campaignError || !campaign) {
-      return new Response(
-        JSON.stringify({ error: "Campaign not found" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 404,
-        }
-      );
+      return createErrorResponse("Campaign not found or access denied", 404, corsHeaders);
     }
 
     if (campaign.pricing_mode !== "performance") {
-      return new Response(
-        JSON.stringify({ error: "Campaign is not in performance mode" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
-      );
+      return createErrorResponse("Campaign is not in performance mode", 400, corsHeaders);
     }
 
     if (campaign.performance_fee_billed) {
-      return new Response(
-        JSON.stringify({ error: "Performance fee already billed" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
-      );
+      return createErrorResponse("Performance fee already billed", 400, corsHeaders);
     }
 
+    // 7. Get User Profile for Stripe Customer ID
     const { data: profile, error: profileError } = await supabase
       .from("user_profiles")
       .select("stripe_customer_id, email, full_name")
@@ -110,24 +62,17 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (profileError || !profile) {
-      return new Response(
-        JSON.stringify({ error: "User profile not found" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 404,
-        }
-      );
+      return createErrorResponse("User profile not found", 404, corsHeaders);
     }
 
     let customerId = profile.stripe_customer_id;
 
     if (!customerId) {
+      // Create customer on the fly if missing (unlikely but safe)
       const customer = await stripe.customers.create({
         email: profile.email,
         name: profile.full_name,
-        metadata: {
-          supabase_user_id: user.id,
-        },
+        metadata: { supabase_user_id: user.id },
       });
       customerId = customer.id;
 
@@ -140,15 +85,10 @@ Deno.serve(async (req: Request) => {
     const feeAmount = Math.round(campaign.performance_fee_amount * 100);
 
     if (feeAmount <= 0) {
-      return new Response(
-        JSON.stringify({ error: "No performance fee to bill" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
-      );
+      return createErrorResponse("No performance fee to bill", 400, corsHeaders);
     }
 
+    // 8. Create Invoice Item + Invoice
     const invoiceItem = await stripe.invoiceItems.create({
       customer: customerId,
       amount: feeAmount,
@@ -156,9 +96,7 @@ Deno.serve(async (req: Request) => {
       description: `Cash-Boost Mission Performance Fee - ${campaign.campaign_type.replace("_", " ")}`,
       metadata: {
         campaign_id: campaign.id,
-        user_id: user.id,
-        total_revenue: campaign.total_revenue.toString(),
-        performance_rate: campaign.performance_rate.toString(),
+        user_id: user.id
       },
     });
 
@@ -174,9 +112,10 @@ Deno.serve(async (req: Request) => {
     try {
       await stripe.invoices.pay(invoice.id);
     } catch (paymentError) {
-      console.error("Payment failed, invoice created:", paymentError);
+      console.error("Payment attempt failed, invoice remains open:", paymentError);
     }
 
+    // 9. Update state in DB
     const { error: updateError } = await supabase
       .from("cash_boost_campaigns")
       .update({
@@ -185,33 +124,22 @@ Deno.serve(async (req: Request) => {
       })
       .eq("id", campaignId);
 
-    if (updateError) {
-      console.error("Error updating campaign:", updateError);
-    }
+    if (updateError) console.error("Error updating campaign record:", updateError);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        invoiceId: invoice.id,
-        invoiceItemId: invoiceItem.id,
-        amount: feeAmount / 100,
-        status: invoice.status,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    return new Response(JSON.stringify({
+      success: true,
+      invoiceId: invoice.id,
+      amount: feeAmount / 100,
+      status: invoice.status,
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   } catch (error) {
-    console.error("Error billing performance fee:", error);
-    return new Response(
-      JSON.stringify({
-        error: error.message || "Failed to bill performance fee",
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    const status = message === 'Unauthorized' ? 401 : 500;
+    console.error(`Performance Fee error: ${message}`);
+    return createErrorResponse(message, status, corsHeaders);
   }
 });
