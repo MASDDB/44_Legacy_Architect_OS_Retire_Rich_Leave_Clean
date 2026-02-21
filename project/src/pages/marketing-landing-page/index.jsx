@@ -110,6 +110,12 @@ const MarketingLandingPage = () => {
             >
               Start Check-Up
             </button>
+            <button
+              onClick={() => navigate('/user-authentication?tab=register')}
+              className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#03131b] transition hover:bg-[#bfe8ff]"
+            >
+              Login
+            </button>
           </div>
         </div>
       </header>

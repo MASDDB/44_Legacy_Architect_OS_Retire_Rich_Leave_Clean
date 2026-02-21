@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthHeader from './components/AuthHeader';
 import AuthTabs from './components/AuthTabs';
@@ -9,8 +9,10 @@ import TrustSignals from './components/TrustSignals';
 
 const UserAuthentication = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading, initialized } = useAuth();
-  const [activeTab, setActiveTab] = useState('login');
+  const requestedTab = new URLSearchParams(location.search).get('tab');
+  const [activeTab, setActiveTab] = useState(requestedTab === 'register' ? 'register' : 'login');
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -20,6 +22,12 @@ const UserAuthentication = () => {
       navigate('/main-dashboard');
     }
   }, [user, initialized, navigate]);
+
+  useEffect(() => {
+    if (requestedTab === 'register' || requestedTab === 'login') {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
