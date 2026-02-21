@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
@@ -59,8 +59,10 @@ const EXIT_TIMELINE_OPTIONS = [
 export default function AIAuditPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const viewLatest = searchParams.get('view') === 'latest';
+  const isStandalone = location.pathname === '/audit-checkup' || searchParams.get('mode') === 'standalone';
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -216,53 +218,114 @@ export default function AIAuditPage() {
   };
 
   if (showResults) {
+    const resultsContent = (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Hidden Profit + Exit Audit Results</h1>
+          <p className="text-lg text-gray-600">
+            Here's where you stand today and the missions we recommend starting first.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <ScoreCard
+            title="AI Readiness Score"
+            score={scores.aiReadiness}
+            status={getScoreStatus(scores.aiReadiness)}
+          />
+          <ScoreCard
+            title="Exit Readiness Score"
+            score={scores.exitReadiness}
+            status={getExitScoreStatus(scores.exitReadiness)}
+          />
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Top Recommended Missions</h2>
+          <div className="space-y-4">
+            {recommendedMissions.map((mission, index) => (
+              <MissionCard key={mission.id} mission={mission} rank={index + 1} />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <Button onClick={startNewAudit} variant="outline">
+            Run New Audit
+          </Button>
+          <Button onClick={() => navigate(isStandalone ? '/' : '/main-dashboard')}>
+            {isStandalone ? 'Back to Homepage' : 'Back to Dashboard'}
+          </Button>
+        </div>
+      </div>
+    );
+
+    if (isStandalone) {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <main className="overflow-y-auto">
+            {resultsContent}
+          </main>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Hidden Profit + Exit Audit Results</h1>
-                <p className="text-lg text-gray-600">
-                  Here's where you stand today and the missions we recommend starting first.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <ScoreCard
-                  title="AI Readiness Score"
-                  score={scores.aiReadiness}
-                  status={getScoreStatus(scores.aiReadiness)}
-                />
-                <ScoreCard
-                  title="Exit Readiness Score"
-                  score={scores.exitReadiness}
-                  status={getExitScoreStatus(scores.exitReadiness)}
-                />
-              </div>
-
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Top Recommended Missions</h2>
-                <div className="space-y-4">
-                  {recommendedMissions.map((mission, index) => (
-                    <MissionCard key={mission.id} mission={mission} rank={index + 1} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <Button onClick={startNewAudit} variant="outline">
-                  Run New Audit
-                </Button>
-                <Button onClick={() => navigate('/main-dashboard')}>
-                  Back to Dashboard
-                </Button>
-              </div>
-            </div>
+            {resultsContent}
           </main>
         </div>
+      </div>
+    );
+  }
+
+  const auditFormContent = (
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Hidden Profit + Exit Audit</h1>
+        <p className="text-lg text-gray-600">
+          Answer a few questions and we'll show you where the leaks are, how ready you are to step back, and which missions to turn on first.
+        </p>
+      </div>
+
+      <ProgressStepper currentStep={currentStep} totalSteps={5} />
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
+        {currentStep === 1 && <Step1BusinessSnapshot answers={answers} onChange={handleInputChange} />}
+        {currentStep === 2 && <Step2LeadsAndCalls answers={answers} onChange={handleInputChange} />}
+        {currentStep === 3 && <Step3FollowUp answers={answers} onChange={handleInputChange} />}
+        {currentStep === 4 && <Step4Systems answers={answers} onChange={handleInputChange} onCheckboxChange={handleCheckboxChange} />}
+        {currentStep === 5 && <Step5Exit answers={answers} onChange={handleInputChange} />}
+      </div>
+
+      <div className="flex justify-between">
+        <Button
+          onClick={handleBack}
+          variant="outline"
+          disabled={currentStep === 1}
+        >
+          Back
+        </Button>
+        <Button
+          onClick={handleNext}
+          disabled={isLoading}
+        >
+          {currentStep === 5 ? 'See Results' : 'Next'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (isStandalone) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="overflow-y-auto">
+          {auditFormContent}
+        </main>
       </div>
     );
   }
@@ -273,40 +336,7 @@ export default function AIAuditPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Hidden Profit + Exit Audit</h1>
-              <p className="text-lg text-gray-600">
-                Answer a few questions and we'll show you where the leaks are, how ready you are to step back, and which missions to turn on first.
-              </p>
-            </div>
-
-            <ProgressStepper currentStep={currentStep} totalSteps={5} />
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
-              {currentStep === 1 && <Step1BusinessSnapshot answers={answers} onChange={handleInputChange} />}
-              {currentStep === 2 && <Step2LeadsAndCalls answers={answers} onChange={handleInputChange} />}
-              {currentStep === 3 && <Step3FollowUp answers={answers} onChange={handleInputChange} />}
-              {currentStep === 4 && <Step4Systems answers={answers} onChange={handleInputChange} onCheckboxChange={handleCheckboxChange} />}
-              {currentStep === 5 && <Step5Exit answers={answers} onChange={handleInputChange} />}
-            </div>
-
-            <div className="flex justify-between">
-              <Button
-                onClick={handleBack}
-                variant="outline"
-                disabled={currentStep === 1}
-              >
-                Back
-              </Button>
-              <Button
-                onClick={handleNext}
-                disabled={isLoading}
-              >
-                {currentStep === 5 ? 'See Results' : 'Next'}
-              </Button>
-            </div>
-          </div>
+          {auditFormContent}
         </main>
       </div>
     </div>

@@ -97,6 +97,7 @@ const Routes = () => {
             <Route path="/cash-boost/live/:campaignId" element={<LiveCampaign />} />
             <Route path="/cash-boost/complete/:campaignId" element={<CompleteCampaign />} />
             <Route path="/ai-audit" element={<AIAudit />} />
+            <Route path="/audit-checkup" element={<AIAudit />} />
             <Route path="/ai-voice-demo" element={<AIVoiceDemo />} />
             <Route path="/exit-readiness" element={<ExitReadinessDashboard />} />
             <Route path="/exit-readiness/assessment" element={<ExitReadinessAssessment />} />

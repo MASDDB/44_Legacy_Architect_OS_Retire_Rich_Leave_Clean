@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
+import legacyArchitectLogo from '../../assets/legacy-architect-logo.svg';
 
 const faqItems = [
   {
@@ -98,20 +99,13 @@ const MarketingLandingPage = () => {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <button
             onClick={() => navigate('/')}
-            className="text-left font-semibold tracking-wide text-white"
-            style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: '1.1rem' }}
+            className="text-left"
           >
-            Legacy Architect OS
+            <img src={legacyArchitectLogo} alt="Legacy Architect OS" className="h-10 w-auto sm:h-12" />
           </button>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/home-legacy')}
-              className="rounded-full border border-[#1f323d] px-4 py-2 text-xs font-medium text-[#9dc5d8] transition hover:border-[#2b4a5a] hover:text-white"
-            >
-              View Legacy Homepage
-            </button>
-            <button
-              onClick={() => navigate('/ai-audit')}
+              onClick={() => navigate('/audit-checkup')}
               className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#03131b] transition hover:bg-[#bfe8ff]"
             >
               Start Check-Up
@@ -137,7 +131,7 @@ const MarketingLandingPage = () => {
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <button
-              onClick={() => navigate('/ai-audit')}
+              onClick={() => navigate('/audit-checkup')}
               className="rounded-full bg-white px-7 py-3 text-sm font-semibold text-[#03131b] transition hover:bg-[#bfe8ff]"
             >
               Start Hidden Profit + Exit Readiness Check-Up
@@ -200,7 +194,7 @@ const MarketingLandingPage = () => {
           </div>
           <div className="mt-8 text-center">
             <button
-              onClick={() => navigate('/ai-audit')}
+              onClick={() => navigate('/audit-checkup')}
               className="rounded-full bg-white px-7 py-3 text-sm font-semibold text-[#03131b] transition hover:bg-[#bfe8ff]"
             >
               Start My Check-Up Now
@@ -299,7 +293,7 @@ const MarketingLandingPage = () => {
               </h2>
             </div>
             <button
-              onClick={() => navigate('/ai-audit')}
+              onClick={() => navigate('/audit-checkup')}
               className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#03131b] transition hover:bg-[#bfe8ff]"
             >
               Run Check-Up
