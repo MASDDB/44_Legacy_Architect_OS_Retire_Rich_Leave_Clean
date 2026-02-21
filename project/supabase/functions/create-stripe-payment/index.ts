@@ -71,6 +71,7 @@ Deno.serve(async (req: Request) => {
         if (planId === 'done-for-you') {
             totalAmount = 100; // $1 verification
         }
+        const monthlyFee = Number(planPricing.monthly || 0);
 
         // 7. Get or Create Stripe Customer
         let stripeCustomer;
@@ -100,7 +101,9 @@ Deno.serve(async (req: Request) => {
                 plan_id: planId,
                 database_tier: databaseTier,
                 billing_cycle: billingCycle,
-                supabase_user_id: user.id
+                supabase_user_id: user.id,
+                customer_email: customerInfo.email,
+                monthly_fee: String(monthlyFee)
             },
             automatic_payment_methods: { enabled: true }
         }, {

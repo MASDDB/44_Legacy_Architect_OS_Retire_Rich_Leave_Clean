@@ -49,6 +49,7 @@ const LeadsView = React.lazy(() => import('./pages/leads-view'));
 const LeadDetail = React.lazy(() => import('./pages/lead-detail'));
 const TodaysAppointments = React.lazy(() => import('./pages/todays-appointments'));
 const SchemaSanityCheck = React.lazy(() => import('./pages/dev-schema-check'));
+const LegacyLandingPage = React.lazy(() => import('./pages/marketing-landing-page/LegacyLandingPage'));
 
 // Suspense fallback
 const PageLoader = () => (
@@ -74,6 +75,7 @@ const Routes = () => {
         <Suspense fallback={<PageLoader />}>
           <RouterRoutes>
             <Route path="/" element={<MarketingLandingPage />} />
+            <Route path="/home-legacy" element={<LegacyLandingPage />} />
             <Route path="/main-dashboard" element={<MainDashboard />} />
             <Route path="/user-authentication" element={<UserAuthentication />} />
             <Route path="/campaign-builder" element={<CampaignBuilder />} />
@@ -90,6 +92,7 @@ const Routes = () => {
             <Route path="/crm-integration-hub" element={<CRMIntegrationHub />} />
             <Route path="/checkout" element={<PricingCheckout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/checkout-success" element={<PaymentSuccess />} />
             <Route path="/cash-boost" element={<CashBoostMission />} />
             <Route path="/cash-boost/live/:campaignId" element={<LiveCampaign />} />
             <Route path="/cash-boost/complete/:campaignId" element={<CompleteCampaign />} />

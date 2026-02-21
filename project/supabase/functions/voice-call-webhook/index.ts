@@ -12,6 +12,51 @@ interface VoiceCallWebhookData {
   To?: string;
 }
 
+const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN') ?? '';
+const VOICE_WEBHOOK_URL = Deno.env.get('VOICE_WEBHOOK_URL') ?? '';
+
+const secureCompare = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+};
+
+const validateTwilioSignature = async (
+  signature: string,
+  url: string,
+  params: URLSearchParams,
+): Promise<boolean> => {
+  if (!TWILIO_AUTH_TOKEN) return false;
+
+  const entries = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const payload = entries.reduce((acc, [key, value]) => `${acc}${key}${value}`, url);
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(TWILIO_AUTH_TOKEN),
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"],
+  );
+
+  const signatureBuffer = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(payload),
+  );
+
+  let binary = "";
+  for (const byte of new Uint8Array(signatureBuffer)) {
+    binary += String.fromCharCode(byte);
+  }
+
+  const expectedSignature = btoa(binary);
+  return secureCompare(signature, expectedSignature);
+};
+
 Deno.serve(async (req: Request) => {
   // Webhooks are usually called by external providers (Twilio, Retell, etc.)
   // We do NOT use verifyAuth here, but we should restrict origins if possible
@@ -36,10 +81,31 @@ Deno.serve(async (req: Request) => {
     const contentType = req.headers.get('content-type');
 
     if (contentType?.includes('application/x-www-form-urlencoded')) {
-      const formData = await req.formData();
-      webhookData = Object.fromEntries(formData.entries()) as any;
+      const twilioSignature = req.headers.get('x-twilio-signature');
+      if (!twilioSignature || !TWILIO_AUTH_TOKEN) {
+        return new Response(JSON.stringify({ error: 'Webhook signature validation is not configured' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const rawBody = await req.text();
+      const params = new URLSearchParams(rawBody);
+      const requestUrl = VOICE_WEBHOOK_URL || req.url;
+      const signatureValid = await validateTwilioSignature(twilioSignature, requestUrl, params);
+      if (!signatureValid) {
+        return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      webhookData = Object.fromEntries(params.entries()) as any;
     } else {
-      webhookData = await req.json();
+      return new Response(JSON.stringify({ error: 'Unsupported webhook format' }), {
+        status: 415,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const { CallSid, CallStatus, CallDuration, RecordingUrl } = webhookData;

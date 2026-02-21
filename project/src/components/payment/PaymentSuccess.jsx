@@ -1,21 +1,69 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../ui/Button';
 import Icon from '../AppIcon';
+import { paymentService } from '../../services/paymentService';
 
 const PaymentSuccess = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
-  const { paymentResult, planData } = location?.state || {};
 
-  if (!paymentResult) {
+  const { paymentResult, planData } = location?.state || {};
+  const [resolvedPaymentResult, setResolvedPaymentResult] = useState(paymentResult || null);
+  const [resolvedPlanData, setResolvedPlanData] = useState(planData || null);
+  const [isResolvingRedirect, setIsResolvingRedirect] = useState(false);
+  const [resolveError, setResolveError] = useState('');
+
+  useEffect(() => {
+    if (paymentResult) return;
+
+    const paymentIntentId = new URLSearchParams(location?.search)?.get('payment_intent');
+    if (!paymentIntentId) return;
+
+    const resolveRedirectPayment = async () => {
+      try {
+        setIsResolvingRedirect(true);
+        setResolveError('');
+
+        const confirmationData = await paymentService?.confirmPayment(paymentIntentId);
+        setResolvedPaymentResult({
+          paymentIntent: { id: paymentIntentId },
+          subscriptionData: confirmationData
+        });
+
+        setResolvedPlanData({
+          planId: confirmationData?.planId,
+          databaseTier: confirmationData?.databaseTier
+        });
+      } catch (error) {
+        setResolveError(error?.message || 'Payment succeeded, but confirmation details could not be loaded.');
+      } finally {
+        setIsResolvingRedirect(false);
+      }
+    };
+
+    resolveRedirectPayment();
+  }, [location?.search, paymentResult]);
+
+  if (!resolvedPaymentResult && isResolvingRedirect) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Icon name="Loader2" size={48} className="text-muted-foreground mb-4 mx-auto animate-spin" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">Finalizing Payment</h2>
+          <p className="text-muted-foreground mb-4">We are confirming your payment details.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!resolvedPaymentResult) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Icon name="AlertCircle" size={48} className="text-muted-foreground mb-4 mx-auto" />
           <h2 className="text-2xl font-bold text-foreground mb-2">Payment Information Missing</h2>
-          <p className="text-muted-foreground mb-4">We couldn't find your payment details.</p>
+          <p className="text-muted-foreground mb-4">{resolveError || 'We couldn\'t find your payment details.'}</p>
           <Button onClick={() => navigate('/')}>
             Return Home
           </Button>
@@ -51,9 +99,9 @@ const PaymentSuccess = () => {
           <h1 className="text-4xl font-bold text-foreground mb-4">
             Payment Successful! 🎉
           </h1>
-          
+
           <p className="text-xl text-muted-foreground mb-8">
-            Thank you for choosing {getPlanDisplayName(planData?.planId)}
+            Thank you for choosing {getPlanDisplayName(resolvedPlanData?.planId || resolvedPaymentResult?.subscriptionData?.planId)}
           </p>
 
           {/* Order Details */}
@@ -63,21 +111,21 @@ const PaymentSuccess = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Plan</span>
-                <span className="font-medium">{getPlanDisplayName(planData?.planId)}</span>
+                <span className="font-medium">{getPlanDisplayName(resolvedPlanData?.planId || resolvedPaymentResult?.subscriptionData?.planId)}</span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Database Tier</span>
-                <span className="font-medium capitalize">{planData?.databaseTier}</span>
+                <span className="font-medium capitalize">{resolvedPlanData?.databaseTier || resolvedPaymentResult?.subscriptionData?.databaseTier || 'N/A'}</span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payment ID</span>
                 <span className="font-medium font-mono text-sm">
-                  {paymentResult?.paymentIntent?.id?.substring(0, 20)}...
+                  {resolvedPaymentResult?.paymentIntent?.id?.substring(0, 20) || 'N/A'}...
                 </span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
                 <span className="font-medium text-success">Confirmed</span>
@@ -86,11 +134,11 @@ const PaymentSuccess = () => {
           </div>
 
           {/* Warning if applicable */}
-          {paymentResult?.warning && (
+          {resolvedPaymentResult?.warning && (
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-8">
               <div className="flex items-center space-x-2">
                 <Icon name="AlertTriangle" size={20} className="text-orange-600 flex-shrink-0" />
-                <p className="text-orange-800 text-sm">{paymentResult?.warning}</p>
+                <p className="text-orange-800 text-sm">{resolvedPaymentResult?.warning}</p>
               </div>
             </div>
           )}
@@ -99,21 +147,21 @@ const PaymentSuccess = () => {
           <div className="bg-primary/10 rounded-lg p-6 mb-8">
             <h3 className="text-lg font-semibold text-foreground mb-3">What's Next?</h3>
             <div className="text-left space-y-2 text-muted-foreground">
-              {planData?.planId === 'done-for-you' && (
+              {(resolvedPlanData?.planId || resolvedPaymentResult?.subscriptionData?.planId) === 'done-for-you' && (
                 <>
                   <p>✓ Our team will contact you within 24 hours</p>
                   <p>✓ Database analysis will begin immediately</p>
                   <p>✓ Campaign setup starts within 48 hours</p>
                 </>
               )}
-              {planData?.planId === 'setup-plus-percentage' && (
+              {(resolvedPlanData?.planId || resolvedPaymentResult?.subscriptionData?.planId) === 'setup-plus-percentage' && (
                 <>
                   <p>✓ Setup process will begin within 24 hours</p>
                   <p>✓ Training sessions will be scheduled</p>
                   <p>✓ Platform access credentials will be sent</p>
                 </>
               )}
-              {planData?.planId === 'white-label' && (
+              {(resolvedPlanData?.planId || resolvedPaymentResult?.subscriptionData?.planId) === 'white-label' && (
                 <>
                   <p>✓ White-label platform will be provisioned</p>
                   <p>✓ Branding customization will begin</p>
